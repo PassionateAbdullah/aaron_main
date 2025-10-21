@@ -280,8 +280,8 @@ def analyze_and_structure_process_data(
                         "case_id": m['case_id'],
                         # "from_label": m['from_label'],
                         # "to_label": m['to_label'],
-                        "from_label_num": from_num,   # e.g. '8g' -> 7
-                        "to_label_num": to_num,       # e.g. '8h' -> 8
+                        "from": from_num,   # e.g. '8g' -> 7
+                        "to": to_num,       # e.g. '8h' -> 8
                         # "from_node_id": activity_to_node_id.get(m['from_activity']),
                         # "to_node_id": activity_to_node_id.get(m['to_activity'])
                     })
