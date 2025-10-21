@@ -45,7 +45,7 @@
       "answer": "A happy path is the most efficient and successful sequence of steps in a process without errors, rework, or exceptions."
     },
     {
-      "question": "how to perform benchmark comparison between teams",
+      "question": 3
       "answer": "Compare key KPIs such as cycle time, dropout rate, and rework loops between teams to identify strengths and improvement areas."
     },
     {

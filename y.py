@@ -135,30 +135,46 @@ def analyze_and_structure_process_data(
         # We'll detect loops per case by finding activities that appear more than once.
         loop_records = []  # list of dicts {case_id, activity, first_label, later_label}
         loop_activities = set()
+        loop_records = []  # list of dicts {case_id, from_activity, to_activity, from_label, to_label}
+        all_loop_activities = set()
 
         for case_id, group in df.groupby(case_id_col):
             group = group.sort_values(by=start_time_col).reset_index(drop=True)
-            # map activity to first occurrence index and label
-            first_occurrence = {}
+            # Map activity to its most recent occurrence (index and label)
+            last_occurrence = {}
             for idx, row in group.iterrows():
                 act = row[activity_col]
                 label = row['step_label']
-                if act not in first_occurrence:
-                    first_occurrence[act] = label
-                else:
-                    # loop detected: from this later label -> first occurrence label
+
+                # If we've seen this activity before, a loop has occurred.
+                if act in last_occurrence:
+                    # The activity just before this repeated one is the 'from' node of the loop.
+                    # Ensure we don't go out of bounds on the very first event.
+                    if idx == 0: continue
+
+                    from_activity_row = group.iloc[idx - 1]
+
                     loop_records.append({
                         'case_id': case_id,
-                        'activity': act,
-                        'from': label,
-                        'to': first_occurrence[act]
+                        'from_activity': from_activity_row[activity_col],
+                        'to_activity': act, # The activity that is being repeated
+                        'from_label': from_activity_row['step_label'],
+                        'to_label': label
                     })
-                    loop_activities.add(act)
+                    all_loop_activities.add(from_activity_row[activity_col])
+                    all_loop_activities.add(act)
+
+                # Update the last seen position of this activity
+                last_occurrence[act] = (idx, label)
 
         # --- 4. Structure Output: Process Flow Nodes (Enhanced) ---
 
         process_flow_nodes = []
         unique_activities = df[activity_col].unique()
+
+        # Create a mapping from activity name to the node ID that will be generated.
+        # This allows us to reference the node ID before the node list is fully built.
+        activity_to_node_id = {activity: str(i + 1) for i, activity in enumerate(unique_activities)}
 
         # --- Predefined mappings (owner, descriptions, optional extras) ---
         if owner_map is None:
@@ -219,16 +235,59 @@ def analyze_and_structure_process_data(
                 "descriptions": description_map.get(activity, [
                     f"{activity} occurred {int(metrics['total_count'])} times in the log."
                 ]),
-                "hasLoop": activity in loop_activities,
+                "hasLoop": activity in all_loop_activities,
                 "extras": extras_map.get(activity, []),
             }
 
             # If activity participates in any loops, attach loop connections listing all loop mappings where this activity is repeated
             if activity in loop_activities:
+                print("")
                 # gather unique loop mappings for this activity
-                mappings = [r for r in loop_records if r['activity'] == activity]
-                # reduce to a list of {case_id, from, to}
-                node_mappings = [{"case_id": m['case_id'], "from": m['from'], "to": m['to']} for m in mappings]
+            if activity in all_loop_activities:
+                print("")
+            # If this activity is the START of a loop, attach the connection details.
+            if activity in all_loop_activities and any(r['from_activity'] == activity for r in loop_records):
+                # Find all loops that start from the current activity
+                mappings = [r for r in loop_records if r['from_activity'] == activity]
+
+                import re
+
+                def alpha_suffix_to_number(suffix: str) -> int:
+                    # convert 'a'->1, 'z'->26, 'aa'->27, etc.
+                    n = 0
+                    for ch in suffix.lower():
+                        n = n * 26 + (ord(ch) - ord('a') + 1)
+                    return n
+
+                def extract_suffix_number(label: str):
+                    # match labels like '8g', '12aa' -> extract trailing letters and convert
+                    if not label:
+                        return None
+                    m = re.match(r'^\d+([a-z]+)$', label, flags=re.I)
+                    if m:
+                        return alpha_suffix_to_number(m.group(1))
+                    # fallback: take any trailing letters
+                    m2 = re.search(r'([a-z]+)$', label, flags=re.I)
+                    if m2:
+                        return alpha_suffix_to_number(m2.group(1))
+                    return None
+
+                node_mappings = []
+                for m in mappings:
+                    from_num = extract_suffix_number(m.get('from_label', ''))
+                    to_num = extract_suffix_number(m.get('to_label', ''))
+                    node_mappings.append({
+                        "case_id": m['case_id'],
+                        # "from_label": m['from_label'],
+                        # "to_label": m['to_label'],
+                        "from_label_num": from_num,   # e.g. '8g' -> 7
+                        "to_label_num": to_num,       # e.g. '8h' -> 8
+                        # "from_node_id": activity_to_node_id.get(m['from_activity']),
+                        # "to_node_id": activity_to_node_id.get(m['to_activity'])
+                    })
+
+                if node_mappings:
+                    node["loopConnections"] = node_mappings
                 node["loopConnections"] = node_mappings
 
             process_flow_nodes.append(node)
@@ -256,7 +315,7 @@ def analyze_and_structure_process_data(
                 },
 
                 "Rework_Analysis_Simplified": {
-                    "Activities_In_Loops": sorted(list(loop_activities)),
+                    "Activities_In_Loops": sorted(list(all_loop_activities)),
                     "Cases_With_Loops_Count": len(cases_with_loops),
                     "Cases_With_Loops": cases_with_loops,
                     "Loop_Details": loop_records,

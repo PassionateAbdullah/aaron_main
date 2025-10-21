@@ -1,67 +1,117 @@
 # Sample data for testing purposes
 test_data = {
-    "team_alpha": {
-        "name": "Team Alpha",
-        "department": "Finance Operations",
-        "description": "Handles end-to-end invoice processing and customer billing workflows.",
-        "kpis": {
-            "total_cases": 5000,
-            "completed_cases": 3113,
-            "dropout_rate": 37.74,
-            "median_cycle_time_h": 183.15,
-            "average_cycle_time_h": 2072.57,
-            "cycle_time_variance_h2": 10081574.70,
-            "std_dev_cycle_time_h": 3175.15,
-            "ci_95_h": 88.01,
-            "min_cycle_time_h": 13.20,
-            "max_cycle_time_h": 13919.78,
-            "median_steps_per_case": 6,
-            "average_steps_per_case": 6.31,
-            "total_loops": 0,
-            "loops_ratio_percent": 0.00,
-            "largest_bottleneck": "Payment Monitoring",
-            "bottleneck_severity_min": 5877.60,
+
+    "Current_Project_Data": {
+
+        "Metadata": {
+
+            "project_id": 8,
+
+            "process_name": "second process",
+
+            "department": "finance1",
+
+            "team": "Team 2",
+
+            "is_related_project": False
+
+        },
+
+        "KPIs": {
+
+            "Total_Cases": 5000,
+
+            "Completed_Cases": 5000,
+
+            "Dropout_Rate_pct": 0.0,
+
+            "Median_Cycle_Time_h": 41.87,
+
+            "Average_Cycle_Time_h": 492.77,
+
+            "Cycle_Time_Variance_h2": 571688.17,
+
+            "Dev_Cycle_Time_h": 756.1,
+
+            "Min_Cycle_Time_h": 0.0,
+
+            "Max_Cycle_Time_h": 3311.78,
+
+            "Median_Steps_Case": 6.0,
+
+            "Average_Steps_Case": 6.31,
+
+            "Total_Loops_Cases": 0,
+
+            "Loops_Ratio_pct": 0.0,
+
+            "Largest_Bottleneck_Activity": "Archive",
+
+            "Bottleneck_Severity_min": 222890.71,
+
+            "Payment_Monitoring_Severity_min": 415.36,
+
+            "Receipt_Reconciled_Severity_min": 240.07
+
         }
+
     },
-    "team_beta": {
-        "name": "Team Beta",
-        "department": "Accounts Receivable",
-        "description": "Manages customer payment monitoring, reconciliation, and collections.",
-        "kpis": {
-            "total_cases": 4750,
-            "completed_cases": 3325,
-            "dropout_rate": 30.00,
-            "median_cycle_time_h": 146.52,
-            "average_cycle_time_h": 1761.69,
-            "cycle_time_variance_h2": 7561181.02,
-            "std_dev_cycle_time_h": 2857.63,
-            "ci_95_h": 79.21,
-            "min_cycle_time_h": 13.20,
-            "max_cycle_time_h": 11135.83,
-            "median_steps_per_case": 7,
-            "average_steps_per_case": 6.95,
-            "total_loops": 120,
-            "loops_ratio_percent": 2.53,
-            "largest_bottleneck": "Receipt Reconciled",
-            "bottleneck_severity_min": 4114.32,
+
+    "Related_Project_Data": {
+
+        "Metadata": {
+
+            "project_id": 27,
+
+            "process_name": "second process 3",
+
+            "department": "finance1",
+
+            "team": "Team 2",
+
+            "is_related_project": True
+
+        },
+
+        "KPIs": {
+
+            "Total_Cases": 5000,
+
+            "Completed_Cases": 5000,
+
+            "Dropout_Rate_pct": 0.0,
+
+            "Median_Cycle_Time_h": 41.87,
+
+            "Average_Cycle_Time_h": 492.77,
+
+            "Cycle_Time_Variance_h2": 571688.17,
+
+            "Dev_Cycle_Time_h": 756.1,
+
+            "Min_Cycle_Time_h": 0.0,
+
+            "Max_Cycle_Time_h": 3311.78,
+
+            "Median_Steps_Case": 6.0,
+
+            "Average_Steps_Case": 6.31,
+
+            "Total_Loops_Cases": 0,
+
+            "Loops_Ratio_pct": 0.0,
+
+            "Largest_Bottleneck_Activity": "Archive",
+
+            "Bottleneck_Severity_min": 222890.71,
+
+            "Payment_Monitoring_Severity_min": 415.36,
+
+            "Receipt_Reconciled_Severity_min": 240.07
+
         }
-    },
-    "diff": {
-        "total_cases": 250,
-        "completed_cases": -212,
-        "dropout_rate": 7.74,
-        "median_cycle_time_h": 36.63,
-        "average_cycle_time_h": 310.89,
-        "cycle_time_variance_h2": 2520393.67,
-        "std_dev_cycle_time_h": 317.51,
-        "ci_95_h": 8.80,
-        "min_cycle_time_h": 0.00,
-        "max_cycle_time_h": 2783.96,
-        "median_steps_per_case": -1,
-        "average_steps_per_case": -0.63,
-        "total_loops": -120,
-        "loops_ratio_percent": -2.53,
-        "bottleneck_severity_min": 1763.28,
-    },
-    "notes": "Team Alpha shows longer cycle times and higher dropout rates compared to Team Beta. Team Beta experiences more loops while maintaining faster cycle times and reduced bottleneck severity. The largest improvement opportunity lies in Payment Monitoring for Team Alpha."
+
+    }
+
 }
+ 

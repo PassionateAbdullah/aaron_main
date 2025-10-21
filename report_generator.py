@@ -3,7 +3,6 @@ import json
 import google.generativeai as genai
 from dotenv import load_dotenv
 from google.api_core import exceptions as api_exceptions
-from data import test_data
 
 load_dotenv()  # Load environment variables from .env file if present
 
@@ -148,6 +147,15 @@ Optimized Gemini call for KPI analysis.
 
 # ========== ENTRY POINT ==========
 if __name__ == "__main__":
+    # Import test data here to avoid import-time errors if `data.py` contains
+    # syntax that raises NameError (for example JSON-style `true/false`).
+    try:
+        from data import test_data
+    except Exception as e:
+        print(f"ERROR importing test_data from data.py: {e}")
+        print("Please fix booleans in data.py (use Python True/False) or ensure the file is valid Python.")
+        raise
+
     result = generate_team_kpi_analysis_gemini(test_data)
     
     
