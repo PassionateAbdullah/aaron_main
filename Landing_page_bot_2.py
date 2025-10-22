@@ -3,11 +3,14 @@ Landing Page Chatbot - Complete FAISS + Gemini Integration
 Workflow: JSON → FAISS → Cosine Similarity → Gemini Retrieval → Response
 Features: Keyword detection, Question recommendations, Context-aware, No hallucination
 """
- 
 import os
 import json
 import numpy as np
 import google.generativeai as genai
+try:
+    from openai import OpenAI as _OpenAIClient  # type: ignore
+except Exception:
+    _OpenAIClient = None
 from dotenv import load_dotenv
 import random
  
@@ -299,32 +302,76 @@ def generate_response_with_context(query, retrieved_entry, similarity, model_nam
     Returns:
         Generated response
     """
-    model = genai.GenerativeModel(model_name)
-   
     # Build context
     context_text = ""
     if prev_context:
-        context_text = f"Previous question: {prev_context['question']}\nPrevious answer: {prev_context['answer']}\n\n"
-   
-    prompt = f"""You are a precise KPI and Process Analysis Assistant.
- 
+        context_text = (
+            f"Previous question: {prev_context.get('question','')}\n"
+            f"Previous answer: {prev_context.get('answer','')}\n\n"
+        )
+
+    system_msg = (
+        "You are a precise KPI and Process Analysis Assistant. "
+        "Use the provided retrieved context to answer the user. "
+        "If the context is not a good match, reply: "
+        "'I don't have this answer right now. Please ask about KPIs, process mining, or business analytics.' "
+        "Close with a helpful follow-up question."
+    )
+
+    user_prompt = f"""
 {context_text}Retrieved Information:
 Question: {retrieved_entry['question']}
 Answer: {retrieved_entry['answer']}
 Similarity Score: {similarity:.2f}
- 
+
 Current User Query: {query}
- 
-INSTRUCTIONS:
-- Use the retrieved answer to respond to the user's query
-- Keep the response natural and conversational
-- If the retrieved answer doesn't match the query well, say: "I don't have this answer right now. Please ask about KPIs, process mining, or business analytics."
-- Add a helpful follow-up question at the end
- 
-Generate response:"""
- 
+""".strip()
+
+    # Try OpenAI first (if installed and API key present), otherwise fall back to Gemini
     try:
-        response = model.generate_content(prompt)
+        if _OpenAIClient is not None and (os.getenv("OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY")):
+            try:
+                client = _OpenAIClient(api_key=os.getenv("OPENAI_API_KEY"))
+            except Exception:
+                client = _OpenAIClient()
+
+            # Pick a sensible default OpenAI model if a Gemini model name was passed
+            oai_model = model_name
+            if isinstance(model_name, str) and ("gemini" in model_name.lower() or not any(k in model_name.lower() for k in ["gpt", "o-"])):
+                oai_model = "gpt-4o-mini"
+
+            resp = client.chat.completions.create(
+                model=oai_model,
+                messages=[
+                    {"role": "system", "content": system_msg},
+                    {"role": "user", "content": user_prompt},
+                ],
+                temperature=0.2,
+                max_tokens=400,
+            )
+
+            content = (
+                (resp.choices[0].message.get("content") if hasattr(resp.choices[0], "message") else None)
+                or getattr(resp.choices[0], "text", None)
+                or ""
+            )
+            content = (content or "").strip()
+            if content:
+                return content
+    except Exception as e:
+        print(f"OpenAI generation error: {e}")
+
+    # Fallback to Gemini if OpenAI isn't available
+    try:
+        model = genai.GenerativeModel(model_name)
+        gemini_prompt = (
+            "You are a precise KPI and Process Analysis Assistant.\n\n" + user_prompt +
+            "\n\nINSTRUCTIONS:\n- Use the retrieved answer to respond to the user's query\n"
+            "- Keep the response natural and conversational\n"
+            "- If the retrieved answer doesn't match the query well, say: \"I don't have this answer right now. Please ask about KPIs, process mining, or business analytics.\"\n"
+            "- Add a helpful follow-up question at the end\n\nGenerate response:"
+        )
+        response = model.generate_content(gemini_prompt)
         return getattr(response, "text", "").strip() or "I don't have this answer right now. Please try again."
     except Exception as e:
         print(f"Generation error: {e}")
