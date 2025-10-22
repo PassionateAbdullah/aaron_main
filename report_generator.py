@@ -1,18 +1,23 @@
 import os
 import json
-import google.generativeai as genai
 from dotenv import load_dotenv
-from google.api_core import exceptions as api_exceptions
+
+# import openai lazily so importing this module doesn't immediately fail in
+# environments where the package isn't installed. We'll raise a clear
+# ImportError with instructions when the function is invoked.
+try:
+    import openai
+except ImportError:  # pragma: no cover - environment dependent
+    openai = None
 
 load_dotenv()  # Load environment variables from .env file if present
 
 # ========== CONFIGURATION / DEBUG KEY LOADING ==========
 # Try to load and normalize the API key; strip surrounding quotes if present.
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-if not GOOGLE_API_KEY:
-    # try again with stripping (handles ".env" keys wrapped in quotes)
-    raw = os.getenv("GOOGLE_API_KEY", "")
-    GOOGLE_API_KEY = raw.strip().strip('"').strip("'")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+if not OPENAI_API_KEY:
+    raw = os.getenv("OPENAI_API_KEY", "")
+    OPENAI_API_KEY = raw.strip().strip('"').strip("'")
 
 def _mask_key(k: str) -> str:
     if not k:
@@ -22,127 +27,154 @@ def _mask_key(k: str) -> str:
     return f"{k[:4]}{'*'*(len(k)-8)}{k[-4:]}"
 
 # Debug: prints presence, masked value and length (never prints full key)
-print(f"DEBUG: GOOGLE_API_KEY present={bool(GOOGLE_API_KEY)} masked={_mask_key(GOOGLE_API_KEY)} length={len(GOOGLE_API_KEY) if GOOGLE_API_KEY else 0}")
+print(f"DEBUG: OPENAI_API_KEY present={bool(OPENAI_API_KEY)} masked={_mask_key(OPENAI_API_KEY)} length={len(OPENAI_API_KEY) if OPENAI_API_KEY else 0}")
 
-if not GOOGLE_API_KEY:
-    raise ValueError("❌ Missing Google API key. Please set GOOGLE_API_KEY as env var or in code.")
+if not OPENAI_API_KEY:
+    raise ValueError("❌ Missing OpenAI API key. Please set OPENAI_API_KEY as env var or in code.")
 
-# Configure Gemini
-genai.configure(api_key=GOOGLE_API_KEY)
+# Configure OpenAI client only if the package is available. If it's not
+# installed we leave `openai` as None and raise a helpful ImportError later
+# when the function is invoked.
+if openai is not None:
+    openai.api_key = OPENAI_API_KEY
 
 
 # ========== CORE FUNCTION ==========
-def generate_team_kpi_analysis_gemini(data: dict, model_name: str = "gemini-2.5-flash") -> dict:
+def generate_team_kpi_analysis_openai(data: dict, model_name: str = "gpt-3.5-turbo") -> dict:
+    """Call OpenAI Chat API to generate a compact JSON KPI analysis.
+
+    This implementation prefers the function-calling pathway (more robust)
+    and falls back to tolerant text parsing if the model or client doesn't
+    return a `function_call`.
+
+    Raises ImportError with actionable instructions when `openai` isn't
+    installed.
     """
 
-Optimized Gemini call for KPI analysis.
-- Merges observation, interpretation, and recommendation into one concise paragraph per section.
-- Output must match the exact JSON format, with nested key names.
-- Keeps all key insights, no loss of relevance.
-- Limits each section to 2 informative lines.
-- Ensures JSON-only, data-driven output. 
-
-
-    """
+    if openai is None:
+        raise ImportError(
+            "Missing dependency 'openai'. Install it into your virtualenv:\n"
+            ".\\.venv\\Scripts\\pip.exe install openai\n"
+            "or run: python -m pip install openai"
+        )
 
     compact_data = json.dumps(data, separators=(",", ":"))
 
-    prompt = (
-    "You are a senior process intelligence analyst. "
-    "Using the given KPI comparison data between two teams, create a concise, insight-rich benchmark analysis. "
-    "Your response must be ONLY valid JSON (no markdown, no text outside JSON). "
-    "Include exactly these sections: "
-    "loop_analysis, bottleneck_analysis, dropout_analysis, top_5_process_variants, "
-    "happy_path, recommendation_to_action, method_notes, appendix. "
-    "For each section, output the field name as the key (e.g., 'loop_analysis'). "
-    "Within each section, provide a single, concise paragraph of 2–4 sentences that merges the observation, interpretation, and recommendation. "
-    "Focus on meaning, trends, and actionable insights. Avoid unnecessary context or filler. "
-    "Ensure no important details or relationships from the KPI data are lost. "
-    "Format the output exactly as shown below, with no extra explanations or markdown:"
-    "\n"
-    "Expected Output Format:\n"
-    "{\n"
-    "  \"loop_analysis\": {\n"
-    "    \"loop_analysis\": \"[Compact paragraph with merged insights for loop analysis.]\"\n"
-    "  },\n"
-    "  \"bottleneck_analysis\": {\n"
-    "    \"bottleneck_analysis\": \"[Compact paragraph with merged insights for bottleneck analysis.]\"\n"
-    "  },\n"
-    "  \"dropout_analysis\": {\n"
-    "    \"dropout_analysis\": \"[Compact paragraph with merged insights for dropout analysis.]\"\n"
-    "  },\n"
-    "  \"happy_path\": {\n"
-    "    \"happy_path\": \"[Compact paragraph with merged insights for happy path.]\"\n"
-    "  },\n"
-    "  \"recommendation_to_action\": {\n"
-    "    \"recommendation_to_action\": \"[Compact paragraph with merged insights for recommendation.]\"\n"
-    "  }\n"
-    "  \"method_notes\": {\n"
-    "    \"method_notes\": \"[Compact paragraph with merged insights for method notes.]\"\n"
-    "  }\n"
-    "  \"appendix\": {\n"
-    "    \"appendix\": \"[Compact paragraph with merged insights for appendix.]\"\n"
-    "  }\n"
-    "}"
-    f"KPI_DATA:{compact_data}"
+    system_msg = (
+        "You are a senior process intelligence analyst. Respond ONLY with valid JSON. "
+        "Produce exactly the following top-level sections: loop_analysis, bottleneck_analysis, dropout_analysis, "
+        "top_5_process_variants, happy_path, recommendation_to_action, method_notes, appendix. "
+        "For each section, include a single string value that is a concise paragraph (2-4 sentences) merging observation, interpretation, and recommendation. "
+        "Do not include any markdown, surrounding text, or explanations outside the JSON object."
+    )
 
+    user_msg = f"KPI_DATA:{compact_data}"
 
-)
-    model = genai.GenerativeModel(model_name)
+    functions = [
+        {
+            "name": "kpi_report",
+            "description": "Return KPI analysis as JSON with these top-level fields.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "loop_analysis": {"type": "string"},
+                    "bottleneck_analysis": {"type": "string"},
+                    "dropout_analysis": {"type": "string"},
+                    "top_5_process_variants": {"type": "string"},
+                    "happy_path": {"type": "string"},
+                    "recommendation_to_action": {"type": "string"},
+                    "method_notes": {"type": "string"},
+                    "appendix": {"type": "string"},
+                },
+                "required": [
+                    "loop_analysis",
+                    "bottleneck_analysis",
+                    "dropout_analysis",
+                    "happy_path",
+                    "recommendation_to_action",
+                    "method_notes",
+                    "appendix",
+                ],
+            },
+        }
+    ]
+
+    # Try function-calling; use new OpenAI client when available (openai>=1.0)
+    # Create a client instance if the package exposes OpenAI class; otherwise
+    # fall back to the older module-level functions (for older clients).
+    if hasattr(openai, "OpenAI"):
+        client = openai.OpenAI(api_key=OPENAI_API_KEY)
+    else:
+        client = openai
+
 
     try:
-        response = model.generate_content(prompt)
-    except api_exceptions.NotFound as e:
-        print("ERROR: The model you requested is not available for this API/version.")
+        # New client: client.chat.completions.create(...)
+        resp = client.chat.completions.create(
+            model=model_name,
+            messages=[{"role": "system", "content": system_msg}, {"role": "user", "content": user_msg}],
+            functions=functions,
+            function_call={"name": "kpi_report"},
+            temperature=0.0,
+            max_tokens=1000,
+        )
+    except TypeError:
+        # Older client or no function-calling support: try without functions
+        resp = client.chat.completions.create(
+            model=model_name,
+            messages=[{"role": "system", "content": system_msg}, {"role": "user", "content": user_msg}],
+            temperature=0.0,
+            max_tokens=1000,
+        )
+
+    # Inspect response: prefer function_call.arguments, otherwise fallback to content/text
+    # Normalize resp to a plain dict for tolerant parsing
+    if hasattr(resp, "to_dict"):
+        resp_dict = resp.to_dict()
+    elif isinstance(resp, dict):
+        resp_dict = resp
+    else:
+        # Best-effort conversion for other response objects
         try:
-            print("Fetching available models...")
-            available = genai.list_models()
-            print("Available models (sample):")
-            # Attempt to print a concise list
-            if isinstance(available, (list, tuple)):
-                for m in available[:20]:
-                    print("-", getattr(m, "name", m))
-            elif isinstance(available, dict):
-                for k in list(available.keys())[:20]:
-                    print("-", k)
-            else:
-                print(available)
+            resp_dict = json.loads(json.dumps(resp))
         except Exception:
-            print("Could not list models programmatically. Check Google Cloud Console -> Generative AI API -> Models.")
-        raise RuntimeError(
-            f"Model '{model_name}' not found or unsupported for generate_content. "
-            "Try 'gemini-1.5-pro' or run ListModels to see supported models."
-        ) from e
-    except Exception:
-        raise
+            resp_dict = {}
 
-    # ---- Extract raw output ----
-    content = ""
-    if hasattr(response, "text") and response.text:
-        content = response.text.strip()
-    elif hasattr(response, "candidates") and response.candidates:
-        try:
-            content = response.candidates[0].content.parts[0].text.strip()
-        except Exception:
-            pass
-
-    # Debug: show raw output
-
-    if not content:
-        raise ValueError("Empty response from Gemini. Try using 'gemini-1.5-pro' instead of 'flash'.")
-
-    # ---- Try parsing JSON safely ----
-    try:
-        parsed = json.loads(content)
-    except json.JSONDecodeError:
-        start = content.find("{")
-        end = content.rfind("}") + 1
-        if start != -1 and end != -1:
-            parsed = json.loads(content[start:end])
+    choices = resp_dict.get("choices") or []
+    text = ""
+    if choices and isinstance(choices, list):
+        first = choices[0]
+        msg = first.get("message") or {}
+        func_call = msg.get("function_call") or {}
+        args_text = func_call.get("arguments")
+        if args_text:
+            try:
+                return json.loads(args_text)
+            except json.JSONDecodeError:
+                # If arguments aren't valid JSON, fall back to tolerant parsing below
+                text = args_text
         else:
-            raise ValueError(f"❌ Failed to parse JSON from model output:\n{content}")
+            text = msg.get("content", "") or first.get("text", "")
+    else:
+        text = resp.get("text", "") or ""
 
-    return parsed
+    text = (text or "").strip()
+    if not text:
+        raise ValueError("Empty response from OpenAI API")
+
+    # Tolerant parsing: try direct json, then extract first {...} block
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        start = text.find("{")
+        end = text.rfind("}") + 1
+        if start != -1 and end != -1 and end > start:
+            try:
+                return json.loads(text[start:end])
+            except json.JSONDecodeError:
+                pass
+
+    raise ValueError(f"❌ Failed to parse JSON from model output:\n{text}")
 
 
 # ========== ENTRY POINT ==========
@@ -156,9 +188,8 @@ if __name__ == "__main__":
         print("Please fix booleans in data.py (use Python True/False) or ensure the file is valid Python.")
         raise
 
-    result = generate_team_kpi_analysis_gemini(test_data)
-    
-    
+    result = generate_team_kpi_analysis_openai(test_data)
+
     print("================ FINAL STRUCTURED REPORT ================\n")
     print(json.dumps(result, indent=4))
     print("\n=========================================================")

@@ -41,9 +41,9 @@ test_data = {
 
             "Average_Steps_Case": 6.31,
 
-            "Total_Loops_Cases": 0,
+            "Total_Loops_Cases": 2,
 
-            "Loops_Ratio_pct": 0.0,
+            "Loops_Ratio_pct": 0.02,
 
             "Largest_Bottleneck_Activity": "Archive",
 
