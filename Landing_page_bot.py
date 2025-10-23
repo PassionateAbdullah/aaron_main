@@ -143,7 +143,25 @@ class ChatSession:
         self.history.append(f"Bot: {reply}")
         return reply
 
+# ===================== WRAPPER FOR BACKEND =====================
+_global_session = None
 
+def get_chatbot_response(user_input: str) -> str:
+    """
+    Unified wrapper for backend or API integration.
+    - Keeps a global ChatSession alive across calls.
+    - Handles one user input and returns the chatbot response.
+    """
+    global _global_session
+
+    # Create global persistent session if not already loaded
+    if _global_session is None:
+        _global_session = ChatSession()
+
+    # Generate response via persistent session
+    response = _global_session.generate_response(user_input)
+
+    return response
 # ===================== CLI INTERFACE =====================
 def main():
     print("🤖 Landing Page Chatbot (OpenAI + Memory + FAISS)\n")
