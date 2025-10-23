@@ -3,198 +3,119 @@ import json
 from openai import OpenAI
 from dotenv import load_dotenv
 
-# ===================== CONFIGURATION =====================
+# Load API key from environment
 load_dotenv()
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip().strip('"').strip("'")
-
-if not OPENAI_API_KEY:
-    raise ValueError("❌ Missing OPENAI_API_KEY. Please set it in your .env file or environment.")
-
-# Initialize OpenAI client
-client = OpenAI(api_key=OPENAI_API_KEY)
-
-
-# ===================== HELPER =====================
-def extract_response_text(response):
-    """
-    Extracts content text safely from OpenAI chat completion responses
-    across SDK versions.
-    """
-    message = getattr(response.choices[0], "message", None)
-    if isinstance(message, dict):
-        return message.get("content", "").strip()
-    elif message and hasattr(message, "content"):
-        return message.content.strip()
-    # fallback to text if exists
-    return getattr(response.choices[0], "text", "").strip()
-
-
-# ===================== EXECUTIVE SUMMARY =====================
-def generate_executive_summary_openai(data: dict, model_name: str = "gpt-4o-mini") -> dict:
-    """
-    Generates a concise executive summary comparing two teams' KPI performance.
-    Returns: {"Executive_Summary": "..."}
-    """
-    compact = json.dumps(data, separators=(",", ":"))
-
-    system_msg = (
-        "You are a senior process intelligence analyst. Respond ONLY with valid JSON. "
-        "Return exactly one top-level key: 'Executive_Summary'. "
-        "Provide a 3–5 sentence overview summarizing team performance, key strengths, weaknesses, and improvement areas."
-    )
-
-    user_msg = f"KPI_DATA:{compact}"
-
-    response = client.chat.completions.create(
-        model=model_name,
-        messages=[
-            {"role": "system", "content": system_msg},
-            {"role": "user", "content": user_msg},
-        ],
-        temperature=0.2,
-        max_tokens=400,
-    )
-
-    text = extract_response_text(response)
-
-    if not text:
-        raise ValueError("Empty response from OpenAI (Executive Summary).")
-
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        s, e = text.find("{"), text.rfind("}") + 1
-        if s != -1 and e > s:
-            return json.loads(text[s:e])
-        raise ValueError(f"Failed to parse Executive_Summary JSON:\n{text}")
-
-
-# ===================== KPI BENCHMARK TABLE =====================
-def generate_kpi_benchmark_table_openai(data: dict, model_name: str = "gpt-4o-mini") -> dict:
-    """
-    Generates a KPI benchmark table in structured JSON format.
-    Output format:
-    {
-      "KPI_Benchmark": [
-        {"Metric": "Process Efficiency", "Current Value": "72%", "Target Value": "85%", "Status": "Below Target"},
-        ...
-      ]
-    }
-    """
-    compact = json.dumps(data, separators=(",", ":"))
-
-    system_msg = (
-        "You are a senior process intelligence analyst. Respond ONLY with valid JSON. "
-        "Return one key 'KPI_Benchmark' mapping to an array of rows with keys: "
-        "'Metric', 'Current Value', 'Target Value', 'Status'. "
-        "Use clear, business-relevant values and human-readable formatting (%, $, days, etc.)."
-    )
-
-    user_msg = (
-        "Prefer metrics like Process Efficiency, Cycle Time, Error Rate, Customer Satisfaction, and Cost per Transaction. "
-        f"Base the table on KPI_DATA:{compact}"
-    )
-
-    response = client.chat.completions.create(
-        model=model_name,
-        messages=[
-            {"role": "system", "content": system_msg},
-            {"role": "user", "content": user_msg},
-        ],
-        temperature=0.2,
-        max_tokens=600,
-    )
-
-    text = extract_response_text(response)
-
-    if not text:
-        raise ValueError("Empty response from OpenAI (KPI benchmark table).")
-
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        s, e = text.find("{"), text.rfind("}") + 1
-        if s != -1 and e > s:
-            return json.loads(text[s:e])
-        raise ValueError(f"Failed to parse KPI_Benchmark JSON:\n{text}")
-
-
-# ===================== KPI ANALYSIS REPORT =====================
-def generate_team_kpi_analysis_openai(data: dict, model_name: str = "gpt-4o-mini") -> dict:
-    """
-    Generates a structured KPI benchmark analysis using OpenAI.
-    Output is valid JSON with concise sections combining observation, interpretation, and recommendation.
-    """
-    compact = json.dumps(data, separators=(",", ":"))
-
-    system_msg = (
-        "You are a senior process intelligence analyst. Respond ONLY with valid JSON. "
-        "Include exactly these top-level keys, each containing a concise analytical paragraph (2–4 sentences): "
-        "loop_analysis, bottleneck_analysis, dropout_analysis, top_5_process_variants, happy_path, "
-        "recommendation_to_action, method_notes, appendix. "
-        "Each key should contain a short text insight merging observation, interpretation, and recommendation."
-    )
-
-    user_msg = f"KPI_DATA:{compact}"
-
-    response = client.chat.completions.create(
-        model=model_name,
-        messages=[
-            {"role": "system", "content": system_msg},
-            {"role": "user", "content": user_msg},
-        ],
-        temperature=0.2,
-        max_tokens=1000,
-    )
-
-    text = extract_response_text(response)
-
-    if not text:
-        raise ValueError("Empty response from OpenAI (KPI analysis).")
-
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        s, e = text.find("{"), text.rfind("}") + 1
-        if s != -1 and e > s:
-            return json.loads(text[s:e])
-        raise ValueError(f"Failed to parse JSON from OpenAI output:\n{text}")
-
-
-# ===================== COMBINED WRAPPER =====================
 def generate_complete_kpi_package_openai(
     data: dict,
-    summary_model_name: str = "gpt-4o-mini",
-    benchmark_model_name: str = "gpt-4o-mini",
-    report_model_name: str = "gpt-4o-mini",
+    model_name: str = "gpt-4o-mini"
 ) -> dict:
     """
-    Generates a complete KPI report package with three sections:
+    Generates a complete KPI report package with a single OpenAI API call.
+
+    This function uses one optimized prompt to instruct the LLM to produce a fully
+    structured JSON output with three top-level keys:
+
     {
         "Executive_Summary": "...",
         "KPI_Benchmark": [...],
         "Analysis_Report": {...}
     }
+
+    - Executive_Summary: a 3–5 sentence overview of team performance, strengths, and improvements.
+    - KPI_Benchmark: a list of metrics with fields "Metric", "Current Value", "Target Value", and "Status".
+    - Analysis_Report: an object with analytical paragraphs (2–4 sentences) for each process category.
     """
-    summary = generate_executive_summary_openai(data, model_name=summary_model_name)
-    benchmark = generate_kpi_benchmark_table_openai(data, model_name=benchmark_model_name)
-    analysis = generate_team_kpi_analysis_openai(data, model_name=report_model_name)
 
-    return {
-        "Executive_Summary": summary.get("Executive_Summary", ""),
-        "KPI_Benchmark": benchmark.get("KPI_Benchmark", []),
-        "Analysis_Report": analysis,
-    }
+    # Initialize client with your OpenAI API key
+    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY", "").strip().strip('"').strip("'"))
 
+    # Compress input data to compact JSON for efficient token usage
+    compact = json.dumps(data, separators=(",", ":"))
 
-# ===================== TEST ENTRY POINT =====================
-if __name__ == "__main__":
+    # --- SYSTEM PROMPT: Guides LLM to output structured business insight JSON ---
+    system_msg = (
+        "You are a senior process intelligence analyst. "
+        "Analyze the provided KPI data between two teams and respond ONLY with valid JSON. "
+        "Return exactly three top-level keys:\n"
+        "1. 'Executive_Summary' → a concise 3–5 sentence overview comparing the two teams' KPI performance, "
+        "highlighting strengths, weaknesses, and improvement opportunities.\n"
+        "2. 'KPI_Benchmark' → an array of rows with keys: 'Metric', 'Current Value', 'Target Value', 'Status'. "
+        "Use clear, business-friendly formatting such as percentages, hours, or dollar values.\n"
+        "3. 'Analysis_Report' → an object containing these keys: loop_analysis, bottleneck_analysis, dropout_analysis, "
+        "top_5_process_variants, happy_path, recommendation_to_action, method_notes, appendix. "
+        "Each should be a compact 2–4 sentence analytical paragraph merging observation, interpretation, and recommendation.\n\n"
+        "Ensure the JSON is properly structured and parsable. "
+        "Do not include markdown, explanations, or text outside of the JSON object."
+        "Expected Output Format:\n"
+    "{\n"
+    "  \"loop_analysis\": {\n"
+    "    \"loop_analysis\": \"[Compact paragraph with merged insights for loop analysis.]\"\n"
+    "  },\n"
+    "  \"bottleneck_analysis\": {\n"
+    "    \"bottleneck_analysis\": \"[Compact paragraph with merged insights for bottleneck analysis.]\"\n"
+    "  },\n"
+    "  \"dropout_analysis\": {\n"
+    "    \"dropout_analysis\": \"[Compact paragraph with merged insights for dropout analysis.]\"\n"
+    "  },\n"
+    "  \"happy_path\": {\n"
+    "    \"happy_path\": \"[Compact paragraph with merged insights for happy path.]\"\n"
+    "  },\n"
+    "  \"recommendation_to_action\": {\n"
+    "    \"recommendation_to_action\": \"[Compact paragraph with merged insights for recommendation.]\"\n"
+    "  }\n"
+    "  \"method_notes\": {\n"
+    "    \"method_notes\": \"[Compact paragraph with merged insights for method notes.]\"\n"
+    "  }\n"
+    "  \"appendix\": {\n"
+    "    \"appendix\": \"[Compact paragraph with merged insights for appendix.]\"\n"
+    "  }\n"
+    "}"
+    f"KPI_DATA:{compact}"
+    )
+
+    # --- USER PROMPT: Includes KPI data context ---
+    user_msg = f"KPI_DATA:{compact}"
+
+    # --- SINGLE OPENAI CALL ---
+    response = client.chat.completions.create(
+        model=model_name,
+        messages=[
+            {"role": "system", "content": system_msg},
+            {"role": "user", "content": user_msg},
+        ],
+        temperature=0.2,     # Lower temperature for factual, consistent outputs
+        max_tokens=2000,     # Enough room for large reports
+    )
+
+    # Extract model output safely
+    text = (
+        (getattr(response.choices[0].message, "content", "")
+         if hasattr(response.choices[0], "message") else None)
+        or getattr(response.choices[0], "text", None)
+        or ""
+    ).strip()
+
+    # Check for empty output
+    if not text:
+        raise ValueError("Empty response from OpenAI (KPI package).")
+
+    # --- Robust JSON parsing ---
     try:
-        from data import test_data  # make sure you have data.py with test_data
-    except ImportError:
-        raise RuntimeError("❌ Missing test_data in data.py. Please create a sample KPI JSON input.")
+        # Try direct parsing
+        return json.loads(text)
+    except json.JSONDecodeError:
+        # If LLM adds stray text, trim to JSON boundaries
+        s, e = text.find("{"), text.rfind("}") + 1
+        if s != -1 and e > s:
+            return json.loads(text[s:e])
+        raise ValueError(f"❌ Failed to parse valid JSON from OpenAI output:\n{text}")
 
-    print("Generating KPI Analysis Report (OpenAI)...\n")
+
+# ===================== TEST USAGE =====================
+if __name__ == "__main__":
+    from data import test_data  # Must contain valid KPI dataset
+
+    print("🧠 Generating complete KPI package (OpenAI)...\n")
     result = generate_complete_kpi_package_openai(test_data)
     print(json.dumps(result, indent=4))
