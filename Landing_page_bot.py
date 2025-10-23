@@ -1,302 +1,164 @@
 """
-Landing Page Chatbot - Clean Function-Based Version
-Simple, modular functions that work independently.
+Landing Page Chatbot - OpenAI + FAISS
+Dynamic | Prompt-based | Memory-enabled | No separate greeting function
 """
 
 import os
 import json
-import re
-from difflib import SequenceMatcher
-import google.generativeai as genai
-from dotenv import load_dotenv
+import numpy as np
 import random
+from openai import OpenAI
+from dotenv import load_dotenv
 
-# ===================== CONFIGURATION =====================
+try:
+    import faiss
+except ImportError:
+    raise ImportError("Please install FAISS using: pip install faiss-cpu")
 
-def init_config(api_key=None, kb_path="landing.json", model="gemini-2.5-flash"):
-    """Initialize and return configuration dict."""
-    load_dotenv()
-    api_key = api_key or os.getenv("GOOGLE_API_KEY")
-    
-    if not api_key:
-        raise ValueError("Missing GOOGLE_API_KEY in environment")
-    
-    genai.configure(api_key=api_key)
-    
+# ===================== CONFIG =====================
+load_dotenv()
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip().strip('"').strip("'")
+if not OPENAI_API_KEY:
+    raise ValueError("❌ Missing OPENAI_API_KEY in environment.")
+
+client = OpenAI(api_key=OPENAI_API_KEY)
+
+DEFAULT_MODEL = "gpt-4o-mini"
+EMBED_MODEL = "text-embedding-3-small"
+
+
+def init_config(kb_path="landing.json", model=DEFAULT_MODEL, threshold=0.7):
+    """Initialize configuration dynamically."""
     return {
         "kb_path": kb_path,
         "model": model,
-        "max_history": 5,
-        "similarity_threshold": 6.0,
-        "fuzzy_threshold": 7.0
+        "threshold": threshold,
+        "embedding_model": EMBED_MODEL,
     }
 
 
 # ===================== KNOWLEDGE BASE =====================
-
-def load_knowledge_base(kb_path):
-    """Load and normalize knowledge base from JSON file."""
+def load_json_kb(kb_path):
+    """Load and normalize JSON knowledge base."""
     with open(kb_path, "r", encoding="utf-8") as f:
         data = json.load(f)
-    
-    # Handle different formats
     entries = data["data"] if isinstance(data, dict) and "data" in data else data
-    
-    # Normalize entries
-    kb = []
-    for entry in entries:
-        if isinstance(entry, dict) and entry.get("question"):
-            kb.append({
-                "question": entry["question"].strip().lower(),
-                "answer": entry.get("answer", "").strip()
-            })
-        elif isinstance(entry, str) and entry.strip():
-            kb.append({"question": entry.strip().lower(), "answer": ""})
-    
-    return kb
+    return [{"question": e["question"].strip(), "answer": e.get("answer", "").strip()} for e in entries if e.get("question")]
 
 
-def save_knowledge_base(kb, kb_path):
-    """Save knowledge base to JSON file."""
-    data = {"data": [{"question": e["question"], "answer": e["answer"]} for e in kb]}
-    with open(kb_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
+# ===================== EMBEDDINGS =====================
+def get_embedding(text):
+    """Generate OpenAI embedding."""
+    emb = client.embeddings.create(model=EMBED_MODEL, input=text)
+    return np.array(emb.data[0].embedding, dtype="float32")
 
 
-def add_kb_entry(kb, question, answer):
-    """Add new entry to knowledge base."""
-    kb.append({"question": question.strip().lower(), "answer": answer.strip()})
-    return kb
+# ===================== FAISS INDEX =====================
+def build_faiss_index(kb):
+    """Build FAISS index for semantic search."""
+    print("🔄 Building FAISS index...")
+    embeddings = [get_embedding(e["question"]) for e in kb]
+    vectors = np.array(embeddings, dtype="float32")
+    faiss.normalize_L2(vectors)
+    index = faiss.IndexFlatIP(vectors.shape[1])
+    index.add(vectors)
+    print(f"✅ FAISS index ready with {len(kb)} entries")
+    return index
 
 
-# ===================== SIMILARITY =====================
-
-def fuzzy_score(text1, text2):
-    """Calculate fuzzy similarity score (0-10)."""
-    if not text1 or not text2:
-        return 0.0
-    ratio = SequenceMatcher(None, text1.lower(), text2.lower()).ratio()
-    return ratio * 10.0
-
-
-def extract_score(text):
-    """Extract numeric score (0-10) from text."""
-    if not text:
-        return None
-    match = re.search(r"([0-9](?:\.[0-9])?)", text)
-    if match:
-        try:
-            val = float(match.group(1))
-            return val if 0.0 <= val <= 10.0 else None
-        except:
-            return None
-    return None
-
-
-# ===================== AI INTERFACE =====================
-
-def rate_similarity_ai(query, candidate, model_name):
-    """Use AI to rate similarity between query and candidate."""
-    model = genai.GenerativeModel(model_name)
-    prompt = (
-        f"Rate similarity from 0 to 10 (only output the number):\n\n"
-        f"User Query: {query}\n"
-        f"KB Question: {candidate}\n\n"
-        f"Respond with a single number between 0 and 10."
-    )
-    
-    try:
-        response = model.generate_content(prompt)
-        text = getattr(response, "text", "").strip()
-        score = extract_score(text)
-        return score if score is not None else fuzzy_score(query, candidate)
-    except:
-        return fuzzy_score(query, candidate)
-
-
-def generate_ai_response(query, history, model_name):
-    """Generate AI response when no KB match found."""
-    model = genai.GenerativeModel(model_name)
-    
-    # Format history
-    history_text = ""
-    if history:
-        parts = [f"User: {h['user']}\nBot: {h['bot']}" for h in history[-5:]]
-        history_text = f"Recent conversation:\n" + "\n".join(parts) + "\n\n"
-    
-    prompt = (
-        f"You are a helpful business process assistant. "
-        f"{history_text}"
-        f"User asked: '{query}'. "
-        f"Answer based on KPI/process analytics context. "
-        f"If unsure, politely suggest related topics."
-    )
-    
-    try:
-        response = model.generate_content(prompt)
-        return getattr(response, "text", "").strip() or "I don't have an answer right now. Can you rephrase?"
-    except:
-        return "I don't have this answer right now. Please try again."
-
-
-# ===================== MATCHING =====================
-
-def find_best_match(query, kb, model_name, fuzzy_threshold=7.0):
-    """Find best matching KB entry for query."""
-    query_clean = query.strip().lower()
-    
-    if not query_clean or not kb:
+# ===================== SEARCH =====================
+def search_similar(query, faiss_index, kb, top_k=1):
+    """Find best KB match for query."""
+    query_emb = get_embedding(query).reshape(1, -1)
+    faiss.normalize_L2(query_emb)
+    distances, indices = faiss_index.search(query_emb, top_k)
+    if len(indices[0]) == 0:
         return None, 0.0
-    
-    # Calculate fuzzy scores
-    scored = [(fuzzy_score(query_clean, e["question"]), e) for e in kb]
-    scored.sort(key=lambda x: x[0], reverse=True)
-    
-    best_fuzzy_score, best_entry = scored[0]
-    
-    # Return if fuzzy score is good enough
-    if best_fuzzy_score >= fuzzy_threshold:
-        return best_entry, round(best_fuzzy_score, 2)
-    
-    # Use AI to rate top 5 candidates
-    top_candidates = [e for _, e in scored[:5]]
-    best_match, best_score = None, -1.0
-    
-    for candidate in top_candidates:
-        score = rate_similarity_ai(query, candidate["question"], model_name)
-        if score > best_score:
-            best_score = score
-            best_match = candidate
-    
-    return best_match, round(best_score, 2)
+    return kb[indices[0][0]], float(distances[0][0])
 
 
-# ===================== GREETING =====================
+# ===================== PROMPT TEMPLATE =====================
+BASE_PROMPT = """
+You are an intelligent and friendly KPI & Process Analysis Assistant.
+You analyze KPI data, business metrics, and process performance insights.
 
-def is_greeting(message):
-    """Check if message is a greeting."""
-    keywords = ["hi", "hello", "hey", "good morning", "good afternoon", 
-                "good evening", "how are you", "help", "what can you do"]
-    return any(kw in message.lower() for kw in keywords)
+Your behavior and personality guidelines:
+- Start with a warm, natural greeting if the user says hello, hi, or similar.
+- If the user asks a question, respond accurately using the provided knowledge base context.
+- If the context does not contain enough information, politely recommend relevant KPI or process-related questions.
+- You remember previous parts of this chat session and maintain context for continuity.
+- Always be professional, concise, and human-like in tone.
+- Never use markdown or bullet points.
+- End responses with a conversational prompt or follow-up question when appropriate.
 
+Knowledge Base Context:
+Question: {context_q}
+Answer: {context_a}
+Relevance Score: {score:.2f}
 
-def get_greeting_response():
-    """Get random greeting response."""
-    responses = [
-        "Hello! 👋 I'm your KPI and Process Analysis Assistant. How can I help?",
-        "Good day! I specialize in KPIs, process mining, and performance insights.",
-        "Hi there! 😊 I can help you explore KPI metrics and process analytics.",
-        "Welcome! I assist with KPI-based process analysis and benchmarking.",
-        "Hello! Let's talk about your business process performance."
-    ]
-    return random.choice(responses)
+User Query: {query}
+Chat History (if any): {history}
 
-
-# ===================== CONVERSATION =====================
-
-def add_to_history(history, user_msg, bot_msg, max_history=5):
-    """Add conversation turn to history."""
-    history.append({"user": user_msg, "bot": bot_msg})
-    if len(history) > max_history:
-        history.pop(0)
-    return history
+Respond appropriately below:
+"""
 
 
-def build_context_query(current_query, history):
-    """Build context-aware query from history."""
-    if history and history[-1].get("user"):
-        return f"{history[-1]['user']} {current_query}"
-    return current_query
+# ===================== CHAT MEMORY + RESPONSE =====================
+class ChatSession:
+    """Handles memory, FAISS context search, and OpenAI responses."""
+
+    def __init__(self, config=None):
+        self.config = config or init_config()
+        self.kb = load_json_kb(self.config["kb_path"])
+        self.faiss_index = build_faiss_index(self.kb)
+        self.history = []  # memory
+        print("✅ Chat session ready!\n")
+
+    def generate_response(self, query):
+        """Generate response from LLM based on query + memory + KB."""
+        best_entry, score = search_similar(query, self.faiss_index, self.kb)
+        context_q = best_entry["question"] if best_entry else "N/A"
+        context_a = best_entry["answer"] if best_entry else "No relevant data available."
+
+        prompt = BASE_PROMPT.format(
+            query=query,
+            context_q=context_q,
+            context_a=context_a,
+            score=score,
+            history=" | ".join(self.history[-5:])  # last 5 exchanges
+        )
+
+        response = client.chat.completions.create(
+            model=self.config["model"],
+            messages=[
+                {"role": "system", "content": "You are an expert process analyst and conversational assistant."},
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0.3,
+            max_tokens=500,
+        )
+
+        reply = response.choices[0].message.content.strip()
+        self.history.append(f"User: {query}")
+        self.history.append(f"Bot: {reply}")
+        return reply
 
 
-# ===================== MAIN CHAT FUNCTION =====================
-
-def chat(user_input, config=None, history=None):
-    """
-    Main chat function - processes user input and returns response.
-    
-    Args:
-        user_input: User's message
-        config: Config dict (creates default if None)
-        history: Conversation history list (creates new if None)
-    
-    Returns:
-        Bot's response string
-    """
-    # Initialize
-    config = config or init_config()
-    history = history if history is not None else []
-    
-    # Load KB
-    kb = load_knowledge_base(config["kb_path"])
-    
-    # Handle greetings
-    if is_greeting(user_input):
-        response = get_greeting_response()
-        add_to_history(history, user_input, response, config["max_history"])
-        return response
-    
-    # Build context query
-    context_query = build_context_query(user_input, history)
-    
-    # Find match
-    match, score = find_best_match(context_query, kb, config["model"], config["fuzzy_threshold"])
-    
-    # Return KB answer if found
-    if match and score >= config["similarity_threshold"]:
-        answer = match["answer"] or "I'm not sure, but I can find out more."
-        response = f"{answer}\n\nAnything else about KPIs or process improvement?"
-        add_to_history(history, user_input, response, config["max_history"])
-        return response
-    
-    # Generate AI fallback
-    response = generate_ai_response(user_input, history, config["model"])
-    add_to_history(history, user_input, response, config["max_history"])
-    return response
-
-
-# ===================== CONVENIENCE WRAPPER =====================
-
-# Global state for backward compatibility
-_global_config = None
-_global_history = []
-
-def chat_simple(user_input, kb_path="landing.json", model="gemini-2.5-flash"):
-    """Simple chat function with global state (backward compatible)."""
-    global _global_config, _global_history
-    
-    if _global_config is None:
-        _global_config = init_config(kb_path=kb_path, model=model)
-    
-    return chat(user_input, _global_config, _global_history)
-
-
-# ===================== CLI =====================
-
+# ===================== CLI INTERFACE =====================
 def main():
-    """Run CLI chatbot."""
-    print("🤖 Landing Page Chatbot\n")
-    
-    config = init_config()
-    history = []
-    
+    print("🤖 Landing Page Chatbot (OpenAI + Memory + FAISS)\n")
+    session = ChatSession()
+
+    print("Type 'exit' to quit.\n")
     while True:
-        try:
-            user_input = input("You: ").strip()
-            
-            if user_input.lower() in ["exit", "quit"]:
-                print("Bot: Have a productive day! 👋")
-                break
-            
-            if not user_input:
-                continue
-            
-            response = chat(user_input, config, history)
-            print(f"Bot: {response}\n")
-            
-        except KeyboardInterrupt:
-            print("\nBot: Have a productive day! 👋")
+        user_input = input("You: ").strip()
+        if not user_input:
+            continue
+        if user_input.lower() in ["exit", "quit"]:
+            print("Bot: Goodbye! 👋 Have a great day!")
             break
+        bot_reply = session.generate_response(user_input)
+        print(f"Bot: {bot_reply}\n")
 
 
 if __name__ == "__main__":
