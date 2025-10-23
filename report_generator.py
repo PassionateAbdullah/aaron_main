@@ -3,16 +3,18 @@ import json
 import google.generativeai as genai
 from dotenv import load_dotenv
 from google.api_core import exceptions as api_exceptions
+try:
+    from openai import OpenAI as _OpenAIClient  # type: ignore
+except Exception:
+    _OpenAIClient = None
 
 load_dotenv()  # Load environment variables from .env file if present
-
 # ========== CONFIGURATION / DEBUG KEY LOADING ==========
-# Try to load and normalize the API key; strip surrounding quotes if present.
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-if not GOOGLE_API_KEY:
-    # try again with stripping (handles ".env" keys wrapped in quotes)
-    raw = os.getenv("GOOGLE_API_KEY", "")
-    GOOGLE_API_KEY = raw.strip().strip('"').strip("'")
+# Try to load and normalize API keys; strip surrounding quotes if present.
+# OpenAI key
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip().strip('"').strip("'")
+# Google key
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "").strip().strip('"').strip("'")
 
 def _mask_key(k: str) -> str:
     if not k:
@@ -22,13 +24,16 @@ def _mask_key(k: str) -> str:
     return f"{k[:4]}{'*'*(len(k)-8)}{k[-4:]}"
 
 # Debug: prints presence, masked value and length (never prints full key)
-print(f"DEBUG: GOOGLE_API_KEY present={bool(GOOGLE_API_KEY)} masked={_mask_key(GOOGLE_API_KEY)} length={len(GOOGLE_API_KEY) if GOOGLE_API_KEY else 0}")
+print(
+    f"DEBUG: OPENAI_API_KEY present={bool(OPENAI_API_KEY)} masked={_mask_key(OPENAI_API_KEY)} length={len(OPENAI_API_KEY) if OPENAI_API_KEY else 0}"
+)
+print(
+    f"DEBUG: GOOGLE_API_KEY present={bool(GOOGLE_API_KEY)} masked={_mask_key(GOOGLE_API_KEY)} length={len(GOOGLE_API_KEY) if GOOGLE_API_KEY else 0}"
+)
 
-if not GOOGLE_API_KEY:
-    raise ValueError("❌ Missing Google API key. Please set GOOGLE_API_KEY as env var or in code.")
-
-# Configure Gemini
-genai.configure(api_key=GOOGLE_API_KEY)
+# Configure Gemini only when a Google key is present (allow OpenAI-only usage)
+if GOOGLE_API_KEY:
+    genai.configure(api_key=GOOGLE_API_KEY)
 
 
 # ========== CORE FUNCTION ==========
@@ -85,7 +90,6 @@ Optimized Gemini call for KPI analysis.
     "  }\n"
     "}"
     f"KPI_DATA:{compact_data}"
-
 
 )
     model = genai.GenerativeModel(model_name)
@@ -228,6 +232,176 @@ def generate_kpi_benchmark_table_gemini(data: dict, model_name: str = "gemini-2.
         raise ValueError(f"Failed to parse KPI_Benchmark JSON from model output:\n{content}")
 
 
+# ========== OPENAI HELPERS ==========
+def _get_openai_client():
+    """Return an OpenAI client if available, else None."""
+    if _OpenAIClient is None:
+        return None
+    key = os.getenv("OPENAI_API_KEY") or ""
+    key = key.strip().strip('"').strip("'")
+    if not key:
+        return None
+    try:
+        return _OpenAIClient(api_key=key)
+    except Exception:
+        try:
+            # allow default env-based init
+            return _OpenAIClient()
+        except Exception:
+            return None
+
+
+# ========== EXECUTIVE SUMMARY ONLY (OPENAI) ==========
+def generate_executive_summary_only_openai(data: dict, model_name: str = "gpt-4o-mini") -> dict:
+    """Generate only the executive summary using OpenAI.
+
+    Returns: {"Executive_Summary": "..."}
+    """
+    client = _get_openai_client()
+    if client is None:
+        raise ImportError("OpenAI client/key not available. Set OPENAI_API_KEY and install openai>=1.0.0.")
+
+    compact = json.dumps(data, separators=(",", ":"))
+    system_msg = (
+        "You are a senior process intelligence analyst. Respond ONLY with valid JSON. "
+        "Return exactly one key: 'Executive_Summary' with a 3-5 sentence overview comparing two teams' KPIs, "
+        "highlighting strengths, gaps, and actions."
+    )
+    user_msg = f"KPI_DATA:{compact}"
+
+    resp = client.chat.completions.create(
+        model=model_name,
+        messages=[
+            {"role": "system", "content": system_msg},
+            {"role": "user", "content": user_msg},
+        ],
+        temperature=0.2,
+        max_tokens=400,
+    )
+    text = (
+        (getattr(resp.choices[0], "message", {}).get("content") if hasattr(resp.choices[0], "message") else None)
+        or getattr(resp.choices[0], "text", None)
+        or ""
+    )
+    text = (text or "").strip()
+    if not text:
+        raise ValueError("Empty response from OpenAI (executive summary).")
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        s, e = text.find("{"), text.rfind("}") + 1
+        if s != -1 and e > s:
+            return json.loads(text[s:e])
+        raise ValueError(f"Failed to parse Executive_Summary JSON from model output:\n{text}")
+
+
+# ========== KPI BENCHMARK TABLE (OPENAI) ==========
+def generate_kpi_benchmark_table_openai(data: dict, model_name: str = "gpt-4o-mini") -> dict:
+    """Generate KPI benchmark table with exact keys using OpenAI.
+
+    Returns: {"KPI_Benchmark": [ {"Metric": ..., "Current Value": ..., "Target Value": ..., "Status": ...}, ... ]}
+    """
+    client = _get_openai_client()
+    if client is None:
+        raise ImportError("OpenAI client/key not available. Set OPENAI_API_KEY and install openai>=1.0.0.")
+
+    compact = json.dumps(data, separators=(",", ":"))
+    system_msg = (
+        "You are a senior process intelligence analyst. Respond ONLY with valid JSON. "
+        "Return exactly one top-level key 'KPI_Benchmark' mapping to an array of rows with keys: "
+        "'Metric', 'Current Value', 'Target Value', 'Status'. Format values human-readably."
+    )
+    user_msg = (
+        "Prefer common metrics when applicable: Process Efficiency, Cycle Time, Error Rate, Customer Satisfaction, Cost per Transaction.\n"
+        f"KPI_DATA:{compact}"
+    )
+
+    resp = client.chat.completions.create(
+        model=model_name,
+        messages=[
+            {"role": "system", "content": system_msg},
+            {"role": "user", "content": user_msg},
+        ],
+        temperature=0.2,
+        max_tokens=600,
+    )
+    text = (
+        (getattr(resp.choices[0], "message", {}).get("content") if hasattr(resp.choices[0], "message") else None)
+        or getattr(resp.choices[0], "text", None)
+        or ""
+    )
+    text = (text or "").strip()
+    if not text:
+        raise ValueError("Empty response from OpenAI (benchmark table).")
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        s, e = text.find("{"), text.rfind("}") + 1
+        if s != -1 and e > s:
+            return json.loads(text[s:e])
+        raise ValueError(f"Failed to parse KPI_Benchmark JSON from model output:\n{text}")
+
+
+# ========== ANALYSIS REPORT (OPENAI) ==========
+def generate_team_kpi_analysis_openai(data: dict, model_name: str = "gpt-4o-mini") -> dict:
+    """OpenAI version of the analysis report to mirror the Gemini output structure."""
+    client = _get_openai_client()
+    if client is None:
+        raise ImportError("OpenAI client/key not available. Set OPENAI_API_KEY and install openai>=1.0.0.")
+
+    compact = json.dumps(data, separators=(",", ":"))
+    system_msg = (
+        "You are a senior process intelligence analyst. Respond ONLY with valid JSON. "
+        "Include exactly these top-level keys with concise paragraphs (2-4 sentences) each: "
+        "loop_analysis, bottleneck_analysis, dropout_analysis, top_5_process_variants, happy_path, "
+        "recommendation_to_action, method_notes, appendix."
+    )
+    user_msg = f"KPI_DATA:{compact}"
+
+    resp = client.chat.completions.create(
+        model=model_name,
+        messages=[
+            {"role": "system", "content": system_msg},
+            {"role": "user", "content": user_msg},
+        ],
+        temperature=0.0,
+        max_tokens=1000,
+    )
+    text = (
+        (getattr(resp.choices[0], "message", {}).get("content") if hasattr(resp.choices[0], "message") else None)
+        or getattr(resp.choices[0], "text", None)
+        or ""
+    )
+    text = (text or "").strip()
+    if not text:
+        raise ValueError("Empty response from OpenAI (analysis report).")
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        s, e = text.find("{"), text.rfind("}") + 1
+        if s != -1 and e > s:
+            return json.loads(text[s:e])
+        raise ValueError(f"Failed to parse analysis JSON from model output:\n{text}")
+
+
+# ========== WRAPPER: EXEC SUMMARY + KPI TABLE + ANALYSIS (OPENAI) ==========
+def generate_complete_kpi_package_openai(
+    data: dict,
+    summary_model_name: str = "gpt-4o-mini",
+    benchmark_model_name: str = "gpt-4o-mini",
+    report_model_name: str = "gpt-4o-mini",
+) -> dict:
+    client = _get_openai_client()
+    if client is None:
+        raise ImportError("OpenAI client/key not available. Set OPENAI_API_KEY and install openai>=1.0.0.")
+    summary = generate_executive_summary_only_openai(data, model_name=summary_model_name)
+    benchmark = generate_kpi_benchmark_table_openai(data, model_name=benchmark_model_name)
+    analysis = generate_team_kpi_analysis_openai(data, model_name=report_model_name)
+    return {
+        "Executive_Summary": summary.get("Executive_Summary", ""),
+        "KPI_Benchmark": benchmark.get("KPI_Benchmark", []),
+        "Analysis_Report": analysis,
+    }
 # ========== WRAPPER: EXEC SUMMARY + KPI TABLE + ANALYSIS ==========
 def generate_complete_kpi_package_gemini(
     data: dict,
@@ -261,6 +435,7 @@ def generate_kpi_package(
     summary_model_name: str = "gemini-2.5-flash",
     benchmark_model_name: str = "gemini-2.5-flash",
     report_model_name: str = "gemini-2.5-flash",
+    provider: str | None = None,
 ) -> dict:
     """Backend-friendly facade that accepts dynamic JSON and returns:
     {
@@ -269,12 +444,32 @@ def generate_kpi_package(
         "Analysis_Report": {...}
     }
     """
-    return generate_complete_kpi_package_gemini(
-        data,
-        summary_model_name=summary_model_name,
-        benchmark_model_name=benchmark_model_name,
-        report_model_name=report_model_name,
-    )
+    # Auto-select provider: explicit > OpenAI if available > Gemini if available
+    prov = (provider or "").lower().strip() if provider else None
+    if not prov:
+        if _get_openai_client() is not None:
+            prov = "openai"
+        elif GOOGLE_API_KEY:
+            prov = "gemini"
+        else:
+            raise ValueError("No AI provider configured. Set OPENAI_API_KEY or GOOGLE_API_KEY.")
+
+    if prov == "openai":
+        return generate_complete_kpi_package_openai(
+            data,
+            summary_model_name="gpt-4o-mini",
+            benchmark_model_name="gpt-4o-mini",
+            report_model_name="gpt-4o-mini",
+        )
+    elif prov == "gemini":
+        return generate_complete_kpi_package_gemini(
+            data,
+            summary_model_name=summary_model_name,
+            benchmark_model_name=benchmark_model_name,
+            report_model_name=report_model_name,
+        )
+    else:
+        raise ValueError("Unsupported provider. Use 'openai' or 'gemini'.")
 
 # ========== WRAPPER: SUMMARY + REPORT ==========
 def generate_full_kpi_report_with_summary_gemini(
