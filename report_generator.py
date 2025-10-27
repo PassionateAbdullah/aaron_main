@@ -35,19 +35,23 @@ def generate_complete_kpi_package_openai(
 
     # --- SYSTEM PROMPT: Guides LLM to output structured business insight JSON ---
     system_msg = (
-        "You are a senior process intelligence analyst. "
-        "Analyze the provided KPI data between two teams and respond ONLY with valid JSON. "
-        "Return exactly three top-level keys:\n"
-        "1. 'Executive_Summary' → a concise 3–5 sentence overview comparing the two teams' KPI performance, "
-        "highlighting strengths, weaknesses, and improvement opportunities.\n"
-        "2. 'KPI_Benchmark' → an array of rows with keys: 'Metric', 'Current Value', 'Target Value', 'Status'. "
-        "Use clear, business-friendly formatting such as percentages, hours, or dollar values.\n"
-        "3. 'Analysis_Report' → an object containing these keys: loop_analysis, bottleneck_analysis, dropout_analysis, "
-        "top_5_process_variants, happy_path, recommendation_to_action, method_notes, appendix. "
-        "Each should be a compact 2–4 sentence analytical paragraph merging observation, interpretation, and recommendation.\n\n"
-        "Ensure the JSON is properly structured and parsable. "
-        "Do not include markdown, explanations, or text outside of the JSON object."
-        "Expected Output Format:\n"
+    
+    "You are a senior process intelligence analyst. "
+    "You are given KPI data for two teams: 'Current_Project_Data' (the team being analyzed) "
+    "and 'Related_Project_Data' (the benchmark or target team). "
+    "Generate a comparative performance analysis between the two. "
+    "Each KPI metric must show both 'Current Value' and 'Target Value' based on these datasets. "
+    "If a value exists in both teams, compute whether the current team is 'Above Target', "
+    "'Below Target', or 'On Target'. "
+    "Your response must be ONLY valid JSON (no markdown, no text outside JSON). "
+    "Include these sections: KPI_Benchmark, loop_analysis, bottleneck_analysis, dropout_analysis, "
+    "top_5_process_variants, happy_path, recommendation_to_action, method_notes, appendix. "
+    "For KPI_Benchmark, output an array with fields: Metric, Current Value, Target Value, and Status. "
+    "Interpret percentages, durations, and ratios appropriately. "
+    "For other sections, provide 2–4 sentences each merging observation, interpretation, and recommendation. "
+    "Keep the writing analytical and concise."
+
+
     "{\n"
     "  \"loop_analysis\": {\n"
     "    \"loop_analysis\": \"[Compact paragraph with merged insights for loop analysis.]\"\n"
@@ -71,7 +75,7 @@ def generate_complete_kpi_package_openai(
     "    \"appendix\": \"[Compact paragraph with merged insights for appendix.]\"\n"
     "  }\n"
     "}"
-    f"KPI_DATA:{compact}"
+    f"\n\nKPI_DATA: {compact}"
     )
 
     # --- USER PROMPT: Includes KPI data context ---
