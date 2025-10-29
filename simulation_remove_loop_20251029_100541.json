@@ -1,0 +1,293 @@
+{
+  "global_metrics": {
+    "Total_Completed_Cases": 5000,
+    "Case_Throughput_Rate_Per_Day": 7.97,
+    "Max_Steps_in_a_Case": 11,
+    "Cycle_Time": {
+      "Average": "86d 8h 34m 19.58s",
+      "Median": "7d 15h 9m",
+      "Min": "13h 12m",
+      "Max": "579d 23h 47m"
+    },
+    "Variant_Analysis": {
+      "Total_Number_of_Process_Variants": 152,
+      "Top_5_Process_Variants": [
+        {
+          "sequence": [
+            "Invoice Created",
+            "Invoice Sent",
+            "Payment Monitoring",
+            "Payment Received",
+            "Receipt Reconciled",
+            "Archive"
+          ],
+          "count": 2413,
+          "percentage": 48.26
+        },
+        {
+          "sequence": [
+            "Invoice Created",
+            "Invoice Sent",
+            "Payment Monitoring",
+            "Receipt Reconciled",
+            "Archive",
+            "Payment Received"
+          ],
+          "count": 1828,
+          "percentage": 36.56
+        },
+        {
+          "sequence": [
+            "Invoice Created",
+            "Invoice Sent",
+            "Payment Monitoring",
+            "Receipt Reconciled",
+            "Archive",
+            "First Reminder Sent",
+            "Payment Received"
+          ],
+          "count": 160,
+          "percentage": 3.2
+        },
+        {
+          "sequence": [
+            "First Reminder Sent",
+            "Invoice Created",
+            "Invoice Sent",
+            "Payment Monitoring",
+            "Payment Received",
+            "Receipt Reconciled",
+            "Archive"
+          ],
+          "count": 110,
+          "percentage": 2.2
+        },
+        {
+          "sequence": [
+            "Invoice Created",
+            "Invoice Sent",
+            "Payment Monitoring",
+            "Receipt Reconciled",
+            "Payment Received",
+            "Archive"
+          ],
+          "count": 47,
+          "percentage": 0.94
+        }
+      ]
+    },
+    "Rework_Analysis_Simplified": {
+      "Activities_In_Loops": [
+        "Archive",
+        "Payment Received"
+      ],
+      "Cases_With_Loops_Count": 1,
+      "Cases_With_Loops": [
+        "R00008"
+      ],
+      "Loop_Details": [
+        {
+          "case_id": "R00008",
+          "from_activity": "Archive",
+          "to_activity": "Archive",
+          "from_label": "5",
+          "to_label": "6"
+        },
+        {
+          "case_id": "R00008",
+          "from_activity": "Payment Received",
+          "to_activity": "Payment Received",
+          "from_label": "7",
+          "to_label": "8"
+        }
+      ]
+    },
+    "Bottleneck_Analysis_Simplified": {
+      "Top_Bottleneck_Activities": [
+        "Payment Monitoring"
+      ],
+      "Time_Lost_Simplified_Basis": "Calculated based on average activity duration."
+    }
+  },
+  "process_flow_nodes": [
+    {
+      "id": "1",
+      "label": "Invoice Created",
+      "value": "24.95",
+      "status": "in-progress",
+      "owner": "Unassigned",
+      "descriptions": [
+        "Invoice Created occurred 5000 times in the log."
+      ],
+      "Is_Bottlenecks": "No",
+      "Is_Dropout": "No",
+      "hasLoop": false,
+      "extras": []
+    },
+    {
+      "id": "2",
+      "label": "Invoice Sent",
+      "value": "16.3",
+      "status": "in-progress",
+      "owner": "Unassigned",
+      "descriptions": [
+        "Invoice Sent occurred 5000 times in the log."
+      ],
+      "Is_Bottlenecks": "No",
+      "Is_Dropout": "No",
+      "hasLoop": false,
+      "extras": []
+    },
+    {
+      "id": "3",
+      "label": "Second Reminder Sent",
+      "value": "13.96",
+      "status": "in-progress",
+      "owner": "Unassigned",
+      "descriptions": [
+        "Second Reminder Sent occurred 49 times in the log.",
+        "There is dropout in case(s): R00001, R00002, R00003, R00004, R00005 \u2014 \"Second Reminder Sent\" was missed from these processes."
+      ],
+      "Is_Bottlenecks": "No",
+      "Is_Dropout": "Yes",
+      "hasLoop": false,
+      "extras": []
+    },
+    {
+      "id": "4",
+      "label": "Payment Monitoring",
+      "value": "5877.6",
+      "status": "in-progress",
+      "owner": "Unassigned",
+      "descriptions": [
+        "Payment Monitoring occurred 5000 times in the log.",
+        "There is a bottleneck in this step (Payment Monitoring) \u2014 delay: 4595.93 sec."
+      ],
+      "Is_Bottlenecks": "Yes",
+      "Is_Dropout": "No",
+      "hasLoop": false,
+      "extras": []
+    },
+    {
+      "id": "5",
+      "label": "Invoice Adjusted",
+      "value": "65.16",
+      "status": "in-progress",
+      "owner": "Unassigned",
+      "descriptions": [
+        "Invoice Adjusted occurred 389 times in the log.",
+        "There is dropout in case(s): R00001, R00004, R00005, R00006, R00007 \u2014 \"Invoice Adjusted\" was missed from these processes."
+      ],
+      "Is_Bottlenecks": "No",
+      "Is_Dropout": "Yes",
+      "hasLoop": false,
+      "extras": []
+    },
+    {
+      "id": "6",
+      "label": "Invoice Resent",
+      "value": "16.69",
+      "status": "in-progress",
+      "owner": "Unassigned",
+      "descriptions": [
+        "Invoice Resent occurred 389 times in the log.",
+        "There is dropout in case(s): R00001, R00004, R00005, R00006, R00007 \u2014 \"Invoice Resent\" was missed from these processes."
+      ],
+      "Is_Bottlenecks": "No",
+      "Is_Dropout": "Yes",
+      "hasLoop": false,
+      "extras": []
+    },
+    {
+      "id": "7",
+      "label": "Payment Received",
+      "value": "32.6",
+      "status": "in-progress",
+      "owner": "Unassigned",
+      "descriptions": [
+        "Payment Received occurred 5001 times in the log.",
+        "Loop removed from this step."
+      ],
+      "Is_Bottlenecks": "No",
+      "Is_Dropout": "No",
+      "hasLoop": false,
+      "extras": [],
+      "loopConnections": null
+    },
+    {
+      "id": "8",
+      "label": "Dispute Raised",
+      "value": "50.54",
+      "status": "in-progress",
+      "owner": "Unassigned",
+      "descriptions": [
+        "Dispute Raised occurred 389 times in the log.",
+        "There is dropout in case(s): R00001, R00004, R00005, R00006, R00007 \u2014 \"Dispute Raised\" was missed from these processes."
+      ],
+      "Is_Bottlenecks": "No",
+      "Is_Dropout": "Yes",
+      "hasLoop": false,
+      "extras": []
+    },
+    {
+      "id": "9",
+      "label": "Receipt Reconciled",
+      "value": "65.18",
+      "status": "in-progress",
+      "owner": "Unassigned",
+      "descriptions": [
+        "Receipt Reconciled occurred 5000 times in the log."
+      ],
+      "Is_Bottlenecks": "No",
+      "Is_Dropout": "No",
+      "hasLoop": false,
+      "extras": []
+    },
+    {
+      "id": "10",
+      "label": "Archive",
+      "value": "5.56",
+      "status": "in-progress",
+      "owner": "Unassigned",
+      "descriptions": [
+        "Archive occurred 5001 times in the log.",
+        "Loop removed from this step."
+      ],
+      "Is_Bottlenecks": "No",
+      "Is_Dropout": "No",
+      "hasLoop": false,
+      "extras": [],
+      "loopConnections": null
+    },
+    {
+      "id": "11",
+      "label": "First Reminder Sent",
+      "value": "12.37",
+      "status": "in-progress",
+      "owner": "Unassigned",
+      "descriptions": [
+        "First Reminder Sent occurred 350 times in the log.",
+        "There is dropout in case(s): R00001, R00002, R00003, R00004, R00005 \u2014 \"First Reminder Sent\" was missed from these processes."
+      ],
+      "Is_Bottlenecks": "No",
+      "Is_Dropout": "Yes",
+      "hasLoop": false,
+      "extras": []
+    },
+    {
+      "id": "12",
+      "label": "Collections Initiated",
+      "value": "105.0",
+      "status": "in-progress",
+      "owner": "Unassigned",
+      "descriptions": [
+        "Collections Initiated occurred 3 times in the log.",
+        "There is dropout in case(s): R00001, R00002, R00003, R00004, R00005 \u2014 \"Collections Initiated\" was missed from these processes."
+      ],
+      "Is_Bottlenecks": "No",
+      "Is_Dropout": "Yes",
+      "hasLoop": false,
+      "extras": []
+    }
+  ]
+}

@@ -39,6 +39,7 @@ def analyze_and_structure_process_data(
     owner_map=None,
     description_map=None,
     extras_map=None,
+    output_file: str = None,
 ):
     """
     Analyzes process event logs and produces a business-friendly structured process flow output.
@@ -48,7 +49,14 @@ def analyze_and_structure_process_data(
     """
 
     if not event_log_data:
-        return json.dumps({"Error": "Event log data is empty."}, indent=4)
+        err = {"Error": "Event log data is empty."}
+        if output_file:
+            try:
+                with open(output_file, 'w', encoding='utf-8') as f:
+                    json.dump(err, f, indent=4)
+            except Exception:
+                pass
+        return err
 
     try:
         df = pd.DataFrame(event_log_data)
@@ -329,10 +337,26 @@ def analyze_and_structure_process_data(
             "process_flow_nodes": process_flow_nodes
         }
 
-        return json.dumps(final_output, indent=4)
+        # if an output file path is provided, write the JSON there for later
+        if output_file:
+            try:
+                with open(output_file, 'w', encoding='utf-8') as f:
+                    json.dump(final_output, f, indent=4)
+            except Exception:
+                # ignore file write errors and still return the dict
+                pass
+
+        return final_output
 
     except Exception as e:
-        return json.dumps({"Error": f"An error occurred during process analysis: {e}"}, indent=4)
+        err = {"Error": f"An error occurred during process analysis: {e}"}
+        if output_file:
+            try:
+                with open(output_file, 'w', encoding='utf-8') as f:
+                    json.dump(err, f, indent=4)
+            except Exception:
+                pass
+        return err
 
 
 def load_event_log_from_csv(csv_path: str):
@@ -357,7 +381,10 @@ if __name__ == '__main__':
     csv_file = 'invoice_process_expanded (1).csv'
     try:
         event_log = load_event_log_from_csv(csv_file)
-        result = analyze_and_structure_process_data(event_log)
-        print(result)
+        # write output to a file so other processes (e.g. Simulation) can load it directly
+        out_file = 'process_analysis_output.json'
+        result = analyze_and_structure_process_data(event_log, output_file=out_file)
+        # `result` is a dict; pretty-print JSON for CLI output
+        print(json.dumps(result, indent=4))
     except Exception as e:
         print(json.dumps({"Error": str(e)}, indent=4))
