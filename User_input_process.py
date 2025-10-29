@@ -13,6 +13,15 @@ SYSTEM_PROMPT = """You are a process analytics assistant for an invoice processi
    - "Payment Received"
    - "Receipt Reconciled"
    - "Archive"
+   -"Invoice Approved"
+   -"Invoice Sent Reminder"
+   -"Invoice Follow-up"
+   -"Customer Notification"
+   -"Invoice Data Entry"
+   -"Fraud Check"
+   -"Dispute Resolution"
+   -"Invoice Validation
+   -"Invoice Adjusted"
    Match user input to closest valid activity name (e.g., "payment monitoring process" → "Payment Monitoring")
 
 2. Mode Rules:
