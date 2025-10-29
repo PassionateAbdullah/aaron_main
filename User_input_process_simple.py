@@ -18,35 +18,66 @@ Rules for understanding user intent:
 
 Return ONLY valid JSON matching this exact structure:
 {
-    "remove_bottlenecks": boolean,
-    "remove_loops": boolean,
-    "remove_dropouts": boolean,
-    "target_activity": string | null
+    "remove_bottlenecks": boolean,  # true when removing bottlenecks
+    "remove_loops": boolean,        # true when removing loops
+    "remove_dropouts": boolean,     # true when removing dropouts
+    "target_activity": string | null,  # specific process/activity name or null
+    "case": string | null,         # "Bottleneck"/"Loop"/"Dropout" in analysis mode, null in action mode
+    "target_percentage": number | null  # percentage value if specified (e.g., 20 for 20%)
 }
 
 Example inputs and outputs:
+
+# Analysis Mode Examples (case is set, remove_* are false):
 Input: "show me the loops in Payment Processing"
 {
     "remove_bottlenecks": false,
-    "remove_loops": true,
+    "remove_loops": false,
     "remove_dropouts": false,
-    "target_activity": "Payment Processing"
+    "target_activity": "Payment Processing",
+    "case": "Loop",
+    "target_percentage": null
 }
 
-Input: "reduce processing time"
+Input: "analyze bottlenecks in Order Processing"
 {
-    "remove_bottlenecks": true,
-    "remove_loops": true,
-    "remove_dropouts": true,
-    "target_activity": null
+    "remove_bottlenecks": false,
+    "remove_loops": false,
+    "remove_dropouts": false,
+    "target_activity": "Order Processing",
+    "case": "Bottleneck",
+    "target_percentage": null
 }
 
-Input: "remove bottlenecks from Order Processing"
+# Action Mode Examples (case is null, remove_* shows what to remove):
+Input: "remove 30% of bottlenecks from Invoice Creation"
 {
     "remove_bottlenecks": true,
     "remove_loops": false,
     "remove_dropouts": false,
-    "target_activity": "Order Processing"
+    "target_activity": "Invoice Creation",
+    "case": null,
+    "target_percentage": 30
+}
+
+Input: "reduce processing time by 20%"
+{
+    "remove_bottlenecks": true,
+    "remove_loops": true,
+    "remove_dropouts": true,
+    "target_activity": null,
+    "case": null,
+    "target_percentage": 20
+}
+
+Input: "optimize Order Processing"
+{
+    "remove_bottlenecks": true,
+    "remove_loops": false,
+    "remove_dropouts": false,
+    "target_activity": "Order Processing",
+    "case": null,
+    "target_percentage": null
 }
 
 Return ONLY the JSON with no additional text or explanation."""
@@ -55,10 +86,12 @@ def parse_process_intent(user_input: str) -> Dict[str, object]:
     """
     Use OpenAI to understand user intent and return a structured response:
     {
-        "remove_bottlenecks": bool,
-        "remove_loops": bool,
-        "remove_dropouts": bool,
-        "target_activity": str | None
+        "remove_bottlenecks": bool,     # true when removing bottlenecks
+        "remove_loops": bool,           # true when removing loops
+        "remove_dropouts": bool,        # true when removing dropouts
+        "target_activity": str | None,  # specific process/activity name or null
+        "case": str | None,            # "Bottleneck"/"Loop"/"Dropout" in analysis mode, null in action mode
+        "target_percentage": float | None  # percentage value if specified (e.g., 20 for 20%)
     }
     """
     # Load OpenAI API key from environment
@@ -90,7 +123,9 @@ def parse_process_intent(user_input: str) -> Dict[str, object]:
             "remove_bottlenecks": bool(result.get("remove_bottlenecks", False)),
             "remove_loops": bool(result.get("remove_loops", False)),
             "remove_dropouts": bool(result.get("remove_dropouts", False)),
-            "target_activity": str(result["target_activity"]) if result.get("target_activity") else None
+            "target_activity": str(result["target_activity"]) if result.get("target_activity") else None,
+            "case": str(result["case"]) if result.get("case") else None,
+            "target_percentage": float(result["target_percentage"]) if result.get("target_percentage") else None
         }
     except Exception as e:
         # If anything fails, return a safe default
