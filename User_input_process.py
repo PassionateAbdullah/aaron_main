@@ -4,16 +4,29 @@ from typing import Dict, Optional
 from dotenv import load_dotenv
 from openai import OpenAI
 
-SYSTEM_PROMPT = """You are a process analytics assistant. Parse requests into JSON following these rules:
+SYSTEM_PROMPT = """You are a process analytics assistant for an invoice processing system. Parse requests into JSON following these rules:
 
-1. "show/analyze" = Analysis Mode: set case field, all remove_* = false
-2. "remove/reduce" = Action Mode: case = null, set relevant remove_* true
-3. Detect process name for target_activity
-4. Capture any percentage mentioned (20% → 20)
-5. Cost/Time rules:
+1. Valid Activity Names (use EXACT matches only):
+   - "Invoice Created"
+   - "Invoice Sent"
+   - "Payment Monitoring"
+   - "Payment Received"
+   - "Receipt Reconciled"
+   - "Archive"
+   Match user input to closest valid activity name (e.g., "payment monitoring process" → "Payment Monitoring")
+
+2. Mode Rules:
+   - "show/analyze" = Analysis Mode: set case field, all remove_* = false
+   - "remove/reduce" = Action Mode: case = null, set relevant remove_* true
+
+3. Cost/Time rules:
    - "reduce cost" affects only bottlenecks and loops (both true)
    - "reduce time" affects only bottlenecks and loops (both true)
    - Dropouts are only set true if explicitly mentioned
+
+4. Additional rules:
+   - Capture any percentage mentioned (20% → 20)
+   - Always use exact activity names from the valid list above
 
 Output format:
 {
@@ -26,22 +39,22 @@ Output format:
 }
 
 Key examples:
-"show loops in Invoice" →
+"show loops in payment monitoring process" →
 {
     "remove_bottlenecks": false,
     "remove_loops": false,
     "remove_dropouts": false,
-    "target_activity": "Invoice",
+    "target_activity": "Payment Monitoring",
     "case": "Loop",
     "target_percentage": null
 }
 
-"reduce cost by 20%" →
+"reduce cost by 20% in payment received step" →
 {
     "remove_bottlenecks": true,
     "remove_loops": true,
     "remove_dropouts": false,
-    "target_activity": null,
+    "target_activity": "Payment Received",
     "case": null,
     "target_percentage": 20
 }
