@@ -21,7 +21,7 @@ except ImportError:
  
 # ===================== CONFIGURATION =====================
  
-def init_config(api_key=None, kb_path="landing.json", model="gemini-2.0-flash-exp", threshold=0.7):
+def init_config(api_key=None, kb_path="Knowledge_Base.json", model="gemini-2.0-flash-exp", threshold=0.7):
     """
     Initialize configuration.
    
@@ -526,7 +526,7 @@ class ChatSession:
  
 _global_session = None
  
-def chat_simple(user_input, kb_path="landing.json", model="gemini-2.0-flash-exp"):
+def chat_simple(user_input, kb_path="Knowledge_Base.json2.0-flash-exp"):
     """Simple chat with global session (auto-initializes)."""
     global _global_session
    
