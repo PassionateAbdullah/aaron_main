@@ -526,7 +526,7 @@ class ChatSession:
  
 _global_session = None
  
-def chat_simple(user_input, kb_path="Knowledge_Base.json2.0-flash-exp"):
+def chat_simple(user_input, kb_path="Knowledge_Base.json.0-flash-exp"):
     """Simple chat with global session (auto-initializes)."""
     global _global_session
    
