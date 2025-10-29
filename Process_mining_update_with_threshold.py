@@ -2,6 +2,7 @@ import pandas as pd
 import json
 import math
 from collections import Counter, defaultdict
+import Simulation as sim
 
 
 # ---------------------------- Helper Functions ----------------------------
@@ -318,5 +319,42 @@ if __name__ == '__main__':
         event_log = load_event_log_from_csv(csv_file)
         result = analyze_and_structure_process_data(event_log)
         print(result)
+
+        # Offer interactive simulation session that uses Simulation.py to process user
+        # intents (show/remove/reduce/etc). We parse the analyzer JSON output into
+        # a dict and pass it to the Simulation.process_user_request function.
+        try:
+            start_sim = input("\nType 'simulate' to enter interactive simulation mode, or press Enter to exit: ").strip()
+        except Exception:
+            start_sim = ''
+
+        if start_sim.lower() == 'simulate':
+            try:
+                data_dict = json.loads(result) if isinstance(result, str) else result
+            except Exception:
+                print(json.dumps({"Error": "Failed to parse analysis output for simulation."}, indent=4))
+                data_dict = None
+
+            if data_dict:
+                print("\nEntering interactive simulation. Type 'exit' to quit the simulator.\n")
+                while True:
+                    user_query = input("Enter your request for the simulation (e.g. 'show bottlenecks', 'remove loops'): ").strip()
+                    if user_query.lower() in ['exit', 'quit', 'q']:
+                        print("Exiting simulation mode.\n")
+                        break
+
+                    try:
+                        response = sim.process_user_request(user_query, data_dict)
+                        print(json.dumps(response, indent=4))
+
+                        # Save result if changes were made (non-show actions)
+                        intent_action = response.get('intent', {}).get('action')
+                        intent_target = response.get('intent', {}).get('target')
+                        if intent_action and intent_action != 'show' and response.get('output') is not None:
+                            # save_simulation_result expects a dict and descriptive action/target
+                            sim.save_simulation_result(response.get('output'), intent_action or 'unknown', intent_target or 'all')
+
+                    except Exception as e:
+                        print(json.dumps({"Error": str(e)}, indent=4))
     except Exception as e:
         print(json.dumps({"Error": str(e)}, indent=4))

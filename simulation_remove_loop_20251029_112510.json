@@ -1,0 +1,293 @@
+{
+  "global_metrics": {
+    "Total_Completed_Cases": 5000,
+    "Case_Throughput_Rate_Per_Day": 7.97,
+    "Max_Steps_in_a_Case": 11,
+    "Most_Frequent_Path": "Invoice Created -> Invoice Sent -> Payment Monitoring -> Payment Received -> Receipt Reconciled -> Archive",
+    "Cycle_Time": {
+      "Average": "86d 8h 34m 19.58s",
+      "Median": "7d 15h 9m",
+      "Min": "13h 12m",
+      "Max": "579d 23h 47m"
+    },
+    "Variant_Analysis": {
+      "Total_Number_of_Process_Variants": 152,
+      "Top_5_Process_Variants": [
+        {
+          "sequence": [
+            "Invoice Created",
+            "Invoice Sent",
+            "Payment Monitoring",
+            "Payment Received",
+            "Receipt Reconciled",
+            "Archive"
+          ],
+          "count": 2413,
+          "percentage": 48.26
+        },
+        {
+          "sequence": [
+            "Invoice Created",
+            "Invoice Sent",
+            "Payment Monitoring",
+            "Receipt Reconciled",
+            "Archive",
+            "Payment Received"
+          ],
+          "count": 1828,
+          "percentage": 36.56
+        },
+        {
+          "sequence": [
+            "Invoice Created",
+            "Invoice Sent",
+            "Payment Monitoring",
+            "Receipt Reconciled",
+            "Archive",
+            "First Reminder Sent",
+            "Payment Received"
+          ],
+          "count": 160,
+          "percentage": 3.2
+        },
+        {
+          "sequence": [
+            "First Reminder Sent",
+            "Invoice Created",
+            "Invoice Sent",
+            "Payment Monitoring",
+            "Payment Received",
+            "Receipt Reconciled",
+            "Archive"
+          ],
+          "count": 110,
+          "percentage": 2.2
+        },
+        {
+          "sequence": [
+            "Invoice Created",
+            "Invoice Sent",
+            "Payment Monitoring",
+            "Receipt Reconciled",
+            "Payment Received",
+            "Archive"
+          ],
+          "count": 47,
+          "percentage": 0.94
+        }
+      ]
+    },
+    "Rework_Analysis_Simplified": {
+      "Activities_In_Loops_Count": 2,
+      "Time_Lost_Simplified_Basis": "Loop/Rework analysis is now embedded in 'process_flow_nodes' loopConnections."
+    },
+    "Bottleneck_Analysis_Simplified": {
+      "Bottlenecks_Based_on_Avg_Duration_Count": 1,
+      "Time_Lost_Simplified_Basis": "Bottlenecks flagged if avg duration > overall log avg duration."
+    },
+    "happy_path": true
+  },
+  "process_flow_nodes": [
+    {
+      "label": "Invoice Created",
+      "hasLoop": false,
+      "isBottleneck": false,
+      "isDropout": false,
+      "id": "1",
+      "value": "24.95",
+      "loopConnections": null,
+      "status": "in-progress",
+      "owner": "N/A",
+      "descriptions": [
+        "Activity occurs 5000 times.",
+        "Average processing time: 24m 56.72s"
+      ],
+      "extras": []
+    },
+    {
+      "label": "Invoice Sent",
+      "hasLoop": false,
+      "isBottleneck": false,
+      "isDropout": false,
+      "id": "2",
+      "value": "16.3",
+      "loopConnections": null,
+      "status": "in-progress",
+      "owner": "N/A",
+      "descriptions": [
+        "Activity occurs 5000 times.",
+        "Average processing time: 16m 18.14s"
+      ],
+      "extras": []
+    },
+    {
+      "label": "Second Reminder Sent",
+      "hasLoop": false,
+      "isBottleneck": false,
+      "isDropout": true,
+      "id": "3",
+      "value": "13.96",
+      "loopConnections": null,
+      "status": "in-progress",
+      "owner": "N/A",
+      "descriptions": [
+        "Activity occurs 49 times.",
+        "Average processing time: 13m 57.55s",
+        "There is dropout in case(s): R00001, R00002, R00003, R00004, R00005 \u2014 \"Second Reminder Sent\" was missed from these processes."
+      ],
+      "extras": []
+    },
+    {
+      "label": "Payment Monitoring",
+      "hasLoop": false,
+      "isBottleneck": true,
+      "isDropout": false,
+      "id": "4",
+      "value": "5877.6",
+      "loopConnections": null,
+      "status": "in-progress",
+      "owner": "N/A",
+      "descriptions": [
+        "Activity occurs 5000 times.",
+        "Average processing time: 4d 1h 57m 35.93s",
+        "Flagged as bottleneck based on overall log average duration."
+      ],
+      "extras": []
+    },
+    {
+      "label": "Invoice Adjusted",
+      "hasLoop": false,
+      "isBottleneck": false,
+      "isDropout": true,
+      "id": "5",
+      "value": "65.16",
+      "loopConnections": null,
+      "status": "in-progress",
+      "owner": "N/A",
+      "descriptions": [
+        "Activity occurs 389 times.",
+        "Average processing time: 1h 5m 9.41s",
+        "There is dropout in case(s): R00001, R00004, R00005, R00006, R00007 \u2014 \"Invoice Adjusted\" was missed from these processes."
+      ],
+      "extras": []
+    },
+    {
+      "label": "Invoice Resent",
+      "hasLoop": false,
+      "isBottleneck": false,
+      "isDropout": true,
+      "id": "6",
+      "value": "16.69",
+      "loopConnections": null,
+      "status": "in-progress",
+      "owner": "N/A",
+      "descriptions": [
+        "Activity occurs 389 times.",
+        "Average processing time: 16m 41.34s",
+        "There is dropout in case(s): R00001, R00004, R00005, R00006, R00007 \u2014 \"Invoice Resent\" was missed from these processes."
+      ],
+      "extras": []
+    },
+    {
+      "label": "Payment Received",
+      "hasLoop": false,
+      "isBottleneck": false,
+      "isDropout": false,
+      "id": "7",
+      "value": "32.6",
+      "loopConnections": null,
+      "status": "in-progress",
+      "owner": "N/A",
+      "descriptions": [
+        "Activity occurs 5001 times.",
+        "Average processing time: 32m 36.28s",
+        "Loop removed from this step."
+      ],
+      "extras": []
+    },
+    {
+      "label": "Dispute Raised",
+      "hasLoop": false,
+      "isBottleneck": false,
+      "isDropout": true,
+      "id": "8",
+      "value": "50.54",
+      "loopConnections": null,
+      "status": "in-progress",
+      "owner": "N/A",
+      "descriptions": [
+        "Activity occurs 389 times.",
+        "Average processing time: 50m 32.39s",
+        "There is dropout in case(s): R00001, R00004, R00005, R00006, R00007 \u2014 \"Dispute Raised\" was missed from these processes."
+      ],
+      "extras": []
+    },
+    {
+      "label": "Receipt Reconciled",
+      "hasLoop": false,
+      "isBottleneck": false,
+      "isDropout": false,
+      "id": "9",
+      "value": "65.18",
+      "loopConnections": null,
+      "status": "in-progress",
+      "owner": "N/A",
+      "descriptions": [
+        "Activity occurs 5000 times.",
+        "Average processing time: 1h 5m 10.81s"
+      ],
+      "extras": []
+    },
+    {
+      "label": "Archive",
+      "hasLoop": false,
+      "isBottleneck": false,
+      "isDropout": false,
+      "id": "10",
+      "value": "5.56",
+      "loopConnections": null,
+      "status": "in-progress",
+      "owner": "N/A",
+      "descriptions": [
+        "Activity occurs 5001 times.",
+        "Average processing time: 5m 33.43s",
+        "Loop removed from this step."
+      ],
+      "extras": []
+    },
+    {
+      "label": "First Reminder Sent",
+      "hasLoop": false,
+      "isBottleneck": false,
+      "isDropout": true,
+      "id": "11",
+      "value": "12.37",
+      "loopConnections": null,
+      "status": "in-progress",
+      "owner": "N/A",
+      "descriptions": [
+        "Activity occurs 350 times.",
+        "Average processing time: 12m 21.94s",
+        "There is dropout in case(s): R00001, R00002, R00003, R00004, R00005 \u2014 \"First Reminder Sent\" was missed from these processes."
+      ],
+      "extras": []
+    },
+    {
+      "label": "Collections Initiated",
+      "hasLoop": false,
+      "isBottleneck": false,
+      "isDropout": true,
+      "id": "12",
+      "value": "105.0",
+      "loopConnections": null,
+      "status": "final",
+      "owner": "N/A",
+      "descriptions": [
+        "Activity occurs 3 times.",
+        "Average processing time: 1h 45m",
+        "There is dropout in case(s): R00001, R00002, R00003, R00004, R00005 \u2014 \"Collections Initiated\" was missed from these processes."
+      ],
+      "extras": []
+    }
+  ]
+}
