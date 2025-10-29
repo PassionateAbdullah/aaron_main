@@ -10,7 +10,10 @@ SYSTEM_PROMPT = """You are a process analytics assistant. Parse requests into JS
 2. "remove/reduce" = Action Mode: case = null, set relevant remove_* true
 3. Detect process name for target_activity
 4. Capture any percentage mentioned (20% → 20)
-5. "reduce cost/time" sets all remove_* true
+5. Cost/Time rules:
+   - "reduce cost" affects only bottlenecks and loops (both true)
+   - "reduce time" affects only bottlenecks and loops (both true)
+   - Dropouts are only set true if explicitly mentioned
 
 Output format:
 {
@@ -33,12 +36,12 @@ Key examples:
     "target_percentage": null
 }
 
-"remove 20% bottlenecks from Payment" →
+"reduce cost by 20%" →
 {
     "remove_bottlenecks": true,
-    "remove_loops": false,
+    "remove_loops": true,
     "remove_dropouts": false,
-    "target_activity": "Payment",
+    "target_activity": null,
     "case": null,
     "target_percentage": 20
 }
