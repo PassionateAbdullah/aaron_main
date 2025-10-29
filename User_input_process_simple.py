@@ -1,17 +1,22 @@
 import os
 import json
-import re
 from typing import Dict, Optional
 from dotenv import load_dotenv
-try:
-    from openai import OpenAI
-except Exception:
-    OpenAI = None
+from openai import OpenAI
 
-SYSTEM_PROMPT = """
-You are a process analytics assistant. Convert user requests about process improvements into a simple action format.
+SYSTEM_PROMPT = """You are a process analytics assistant that converts user requests into structured actions.
 
-Return only valid JSON matching this structure:
+Rules for understanding user intent:
+1. If user mentions "show" or similar words (display/visualize/see), they want to analyze that aspect
+2. If user mentions "reduce cost" or "reduce time", set all removal flags to true as this requires removing all inefficiencies
+3. "Remove" or similar words (eliminate/fix/delete) for a specific item sets only that flag true
+4. Target activity is the specific process or area mentioned (e.g., "in Payment Processing", "during Customer Service")
+5. Watch for implicit meanings:
+   - "optimize Payment Processing" implies removing bottlenecks
+   - "improve efficiency in Sales" implies removing bottlenecks
+   - "fix the process" implies removing all issues
+
+Return ONLY valid JSON matching this exact structure:
 {
     "remove_bottlenecks": boolean,
     "remove_loops": boolean,
@@ -19,82 +24,103 @@ Return only valid JSON matching this structure:
     "target_activity": string | null
 }
 
-Use exactly these field names.
-"""
+Example inputs and outputs:
+Input: "show me the loops in Payment Processing"
+{
+    "remove_bottlenecks": false,
+    "remove_loops": true,
+    "remove_dropouts": false,
+    "target_activity": "Payment Processing"
+}
 
+Input: "reduce processing time"
+{
+    "remove_bottlenecks": true,
+    "remove_loops": true,
+    "remove_dropouts": true,
+    "target_activity": null
+}
 
-def _fallback_parse(user_input: str) -> Dict[str, object]:
-    text = user_input.lower()
-    remove_bottlenecks = bool(re.search(r"\b(bottleneck|bottlenecks|constraint|constraints)\b", text))
-    remove_loops = bool(re.search(r"\b(loop|loops|rework|reworks)\b", text))
-    remove_dropouts = bool(re.search(r"\b(dropout|dropouts|abandonment|abandonments|dropped)\b", text))
+Input: "remove bottlenecks from Order Processing"
+{
+    "remove_bottlenecks": true,
+    "remove_loops": false,
+    "remove_dropouts": false,
+    "target_activity": "Order Processing"
+}
 
-    # Try to extract activity after 'in', 'from', or 'for'
-    m = re.search(r"\b(?:in|from|for)\s+([^,;\n]+)", user_input, flags=re.I)
-    target_activity = None
-    if m:
-        act = m.group(1).strip()
-        # Stop at common conjunctions
-        act = re.split(r"\band\b|\bfor\b|\bto\b|\bwith\b", act, flags=re.I)[0].strip()
-        # Normalize whitespace and strip trailing punctuation
-        target_activity = act.strip(" .;,") or None
+Return ONLY the JSON with no additional text or explanation."""
 
-    return {
-        "remove_bottlenecks": remove_bottlenecks,
-        "remove_loops": remove_loops,
-        "remove_dropouts": remove_dropouts,
-        "target_activity": target_activity,
-    }
-
-
-def parse_process_intent(user_input: str, model: str = "gpt-4") -> Dict[str, object]:
-    """Return structure:
-    {
-      "remove_bottlenecks": bool,
-      "remove_loops": bool,
-      "remove_dropouts": bool,
-      "target_activity": str|None
-    }
-    Uses the OpenAI client if available; otherwise falls back to a simple regex-based parser.
+def parse_process_intent(user_input: str) -> Dict[str, object]:
     """
-    api_key = os.getenv("OPENAI_API_KEY", "").strip().strip('"').strip("'")
-    if api_key and OpenAI is not None:
-        try:
-            client = OpenAI(api_key=api_key)
-            resp = client.chat.completions.create(
-                model=model,
-                messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": user_input}
-                ],
-                temperature=0.0,
-                max_tokens=200,
-            )
-            content = resp.choices[0].message.content.strip()
-            data = json.loads(content)
-            return {
-                "remove_bottlenecks": bool(data.get("remove_bottlenecks", False)),
-                "remove_loops": bool(data.get("remove_loops", False)),
-                "remove_dropouts": bool(data.get("remove_dropouts", False)),
-                "target_activity": str(data.get("target_activity")) if data.get("target_activity") else None,
-            }
-        except Exception:
-            # Fall through to local parser
-            return _fallback_parse(user_input)
-    else:
-        return _fallback_parse(user_input)
+    Use OpenAI to understand user intent and return a structured response:
+    {
+        "remove_bottlenecks": bool,
+        "remove_loops": bool,
+        "remove_dropouts": bool,
+        "target_activity": str | None
+    }
+    """
+    # Load OpenAI API key from environment
+    load_dotenv()
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise ValueError("OPENAI_API_KEY environment variable is required")
+    
+    # Initialize OpenAI client
+    client = OpenAI(api_key=api_key)
+    
+    try:
+        # Get LLM's interpretation of the user's intent
+        response = client.chat.completions.create(
+            model="gpt-4",  # Can be changed to gpt-3.5-turbo for lower latency
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": user_input}
+            ],
+            temperature=0.0,  # Use 0 for consistent, deterministic outputs
+            max_tokens=150
+        )
+        
+        # Parse the JSON response
+        result = json.loads(response.choices[0].message.content.strip())
+        
+        # Ensure we have the exact structure we want
+        return {
+            "remove_bottlenecks": bool(result.get("remove_bottlenecks", False)),
+            "remove_loops": bool(result.get("remove_loops", False)),
+            "remove_dropouts": bool(result.get("remove_dropouts", False)),
+            "target_activity": str(result["target_activity"]) if result.get("target_activity") else None
+        }
+    except Exception as e:
+        # If anything fails, return a safe default
+        print(f"Error processing input: {str(e)}")
+        return {
+            "remove_bottlenecks": False,
+            "remove_loops": False,
+            "remove_dropouts": False,
+            "target_activity": None
+        }
 
 
 if __name__ == "__main__":
-    load_dotenv()
-    tests = [
-        "remove bottlenecks in Payment Monitoring",
-        "eliminate loops and dropouts from Customer Onboarding",
-        "fix bottlenecks and dropouts in Order Processing",
-        "please remove dropouts for Payment Monitoring and optimize"
-    ]
-
-    for t in tests:
-        out = parse_process_intent(t)
-        print("\nInput:", t)
-        print(json.dumps(out, indent=4))
+    print("Process Analytics Assistant")
+    print("Type 'exit' or press Ctrl+C to quit\n")
+    
+    while True:
+        try:
+            user_text = input("Your request: ").strip()
+            if not user_text or user_text.lower() == 'exit':
+                break
+                
+            result = parse_process_intent(user_text)
+            print("\nOutput:")
+            print(json.dumps(result, indent=4))
+            print()
+            
+        except KeyboardInterrupt:
+            break
+        except Exception as e:
+            print(f"Error: {str(e)}")
+            
+    print("\nGoodbye!")
