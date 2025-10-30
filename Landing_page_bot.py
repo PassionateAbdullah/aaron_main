@@ -32,7 +32,7 @@ EMBED_MODEL = "text-embedding-3-small"
 EMBED_CACHE = Path(".kb_embeddings.npy")
 
 
-def init_config(kb_path="Knowledge_Base.json", model=DEFAULT_MODEL, threshold=0.7):
+def init_config(kb_path="Knowledge_base.json", model=DEFAULT_MODEL, threshold=0.7):
     """Initialize configuration dynamically."""
     return {
         "kb_path": kb_path,
@@ -112,20 +112,14 @@ def search_similar(query, faiss_index, kb, top_k=1):
 
 # ===================== PROMPT TEMPLATE =====================
 BASE_PROMPT ="""
-You are an intelligent and friendly KPI & Process Analysis Assistant.
-You specialize in analyzing KPI data, business metrics, and process performance insights.
+You are an expert KPI & Process Analysis Assistant. Only answer using the provided Knowledge Base Context.
 
-Behavior and personality rules:
-- Greet the user warmly only at the start of a new conversation or when the user explicitly greets (e.g., hello, hi, hey).
-- Do not repeat greetings or say phrases like "Hello again" or "Hi again" in follow-up replies.
-- When the user asks a question, respond clearly and accurately using the provided knowledge base context if relevant.
-- If the context does not provide enough information, politely suggest related KPI, process, or analytics topics instead of guessing.
-- Maintain conversation memory and refer to prior exchanges naturally when appropriate.
-- Keep responses concise (2–5 sentences), factual, and conversational.
-- Maintain a professional yet approachable tone throughout the dialogue.
-- Do not use markdown, emojis, or bullet points.
-- Avoid unnecessary repetition, self-introductions, or filler text.
-- End each response with a natural follow-up question when it makes sense.
+Rules:
+- Use the Knowledge Base Context (Question/Answer) to form your reply. Do not invent facts or hallucinate.
+- If the provided Relevance Score ({score:.2f}) is below the acceptance threshold ({threshold:.2f}), do NOT attempt to answer from memory — instead politely refuse and ask the user to ask a question related to KPIs, process mining, or items covered in the knowledge base.
+- Keep replies concise (1–4 sentences), factual, and professional. Do not use markdown, emojis, or bullet points.
+- Greet only at the start of a conversation when the user explicitly greets.
+- End replies with a natural follow-up question when appropriate.
 
 Knowledge Base Context:
 Question: {context_q}
@@ -258,6 +252,7 @@ class ChatSession:
             context_q=context_q,
             context_a=context_a,
             score=score,
+            threshold=float(self.config.get("threshold", 0.7)),
             history=" | ".join(self.history[-5:])  # last 5 exchanges
         )
 
