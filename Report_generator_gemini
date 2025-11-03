@@ -1,0 +1,155 @@
+import os
+import json
+import google.generativeai as genai
+from dotenv import load_dotenv
+
+# Load API key from environment
+load_dotenv()
+
+
+def generate_complete_kpi_package_gemini(
+    data: dict,
+    model_name: str = "gemini-1.5-pro-latest"
+) -> dict:
+    """
+    Generates a complete KPI report package with a single Gemini API call.
+    Produces JSON with top-level keys: Executive_Summary, KPI_Benchmark, Analysis_Report.
+    """
+
+    # Configure Gemini client
+    api_key = os.getenv("GOOGLE_API_KEY", "").strip().strip('"').strip("'")
+    if not api_key:
+        raise ValueError("Missing GOOGLE_API_KEY in environment.")
+    genai.configure(api_key=api_key)
+
+    # Compress input data to compact JSON for efficient token usage
+    compact = json.dumps(data, separators=(",", ":"))
+
+    # System instruction (same structure as OpenAI variant)
+    system_msg = (
+        "You are a senior process intelligence analyst. "
+        "Two datasets are provided: 'Current_Project_Data' (Team 1) and 'Related_Project_Data' (Team 2, the benchmark). "
+        "Return a concise, well-structured JSON report with exactly three top-level keys: "
+        "'Executive_Summary', 'KPI_Benchmark', and 'Analysis_Report'.\n\n"
+        
+        
+        "1. Executive_Summary: 3–5 sentences. Provide a comparative evaluation between Team 1 and Team 2: "
+        "which team performs better and why. Combine observation, interpretation, and summary into one coherent paragraph.\n\n"
+
+
+        "2. KPI_Benchmark: An array of objects with these exact fields: \n"
+        "   {\n"
+        "     \"Metric\": \"<name>\",\n"
+        "     \"Team 1 (<Dept from KPI_DATA.Metadata>)\": <value>,\n"
+        "     \"Team 2 (<Dept from KPI_DATA.Metadata>)\": <value>,\n"
+        "     \"Status (Team 1 vs Team 2)\": \"<Team 1 higher by X.X%|Team 1 lower by X.X%|Equal>\"\n"
+        "   }\n"
+        "   Rules: Use department names from KPI_DATA.Metadata for the headers. Compute percentage as ((Team1 - Team2)/Team2)*100, "
+        "round to 1 decimal, include the % sign, and use a short comparative label (no 'target' wording): if Team1>Team2 use 'Team 1 higher by X.X%'; if Team1<Team2 use 'Team 1 lower by X.X%'; if equal use 'Equal'. "
+        "For metrics that represent proportions (names include 'Rate' or 'Ratio', e.g., 'Dropout Rate', 'First Pass Rate', 'First Pass Yield', 'FPY', 'Process Efficiency Ratio'), format Team 1 and Team 2 values as percentages with the % symbol. "
+        "Status will be exactly like this Team 1 higher by X.X%|Team 1 lower by X.X%|Equal "
+        "If such values are provided as decimals between 0 and 1 (e.g., 0.49), convert to percentages (49.0%) with 1 decimal place. For other metrics, keep numeric values without units.\n\n"
+
+
+        "3. Analysis_Report: A nested object with the following keys and 2–4 sentences each, combining evaluation, observation, interpretation, and recommendations: \n"
+        "{\n"
+        "  \"loop_analysis\": { \"loop_analysis\": \"...\" },\n"
+        "  \"bottleneck_analysis\": { \"bottleneck_analysis\": \"...\" },\n"
+        "  \"dropout_analysis\": { \"dropout_analysis\": \"...\" },\n"
+        "  \"happy_path\": { \"happy_path\": \"...\" },\n"
+        "  \"recommendation_to_action\": { \"recommendation_to_action\": \"...\" },\n"
+        "  \"method_notes\": { \"method_notes\": \"...\" },\n"
+        "  \"appendix\": { \"appendix\": \"[Brief supporting notes: metric definitions, calculation formulas, assumptions, data caveats/coverage, thresholds or parameters used, and any references to source fields.]\" }\n"
+        "}\n\n"
+
+        "Output rules: valid JSON only (no markdown), preserve numeric meaning, no extra commentary. Use 'N/A' only when data is unavailable; however, the Appendix must not be 'N/A'—always include brief supporting notes (even if minimal)."
+    )
+
+    # KPI data passed as the user content
+    user_msg = f"KPI_DATA:{compact}"
+
+    # Build Gemini model with system instruction and generate output
+    # Discover a supported model dynamically to avoid 404s across versions/regions.
+    def _normalize(name: str) -> str:
+        return name.replace("models/", "")
+
+    tried = []
+    response = None
+    last_err = None
+    preferred = [model_name, "gemini-1.5-pro", "gemini-1.5-pro-latest", "gemini-1.5-flash", "gemini-1.5-flash-latest"]
+
+    try:
+        available = list(genai.list_models())
+    except Exception:
+        available = []  # If listing fails, fall back to hardcoded tries
+
+    # Try exact/normalized matches that support generateContent
+    candidates = []
+    if available:
+        for m in available:
+            if "generateContent" not in getattr(m, "supported_generation_methods", []):
+                continue
+            candidates.append(getattr(m, "name", ""))
+
+    # Ordered set of names to try
+    names_to_try = []
+    names_to_try.extend(preferred)
+    names_to_try.extend([_normalize(n) for n in candidates])
+    names_to_try.extend(candidates)
+
+    for m in names_to_try:
+        if not m or m in tried:
+            continue
+        tried.append(m)
+        try:
+            model = genai.GenerativeModel(model_name=m, system_instruction=system_msg)
+            response = model.generate_content(
+                [user_msg],  # pass as a list to be explicit
+                generation_config={
+                    "temperature": 0.2,
+                    "max_output_tokens": 2000,
+                    "candidate_count": 1,
+                    "response_mime_type": "application/json",
+                },
+            )
+            break
+        except Exception as e:
+            last_err = e
+            response = None
+            continue
+
+    if response is None:
+        msg = (
+            "Gemini model not found or unsupported for generate_content. Tried: "
+            + ", ".join(tried)
+            + ". Consider upgrading the SDK (pip install -U google-generativeai) and verify GOOGLE_API_KEY/model access."
+        )
+        raise RuntimeError(msg) from last_err
+
+    # Extract text robustly across SDK versions
+    text = (getattr(response, "text", None) or "").strip()
+    if not text and hasattr(response, "candidates") and response.candidates:
+        parts = getattr(response.candidates[0], "content", None)
+        if parts and getattr(parts, "parts", None):
+            first = parts.parts[0]
+            text = getattr(first, "text", "").strip()
+    if not text:
+        raise ValueError("Empty response from Gemini (KPI package).")
+
+    # Robust JSON parsing
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        s, e = text.find("{"), text.rfind("}") + 1
+        if s != -1 and e > s:
+            return json.loads(text[s:e])
+        raise ValueError(f"❌ Failed to parse valid JSON from Gemini output:\n{text}")
+
+
+# ===================== TEST USAGE =====================
+if __name__ == "__main__":
+    from data import test_data  # Must contain valid KPI dataset
+
+    print("🧠 Generating complete KPI package (Gemini)...\n")
+    result = generate_complete_kpi_package_gemini(test_data)
+    print(json.dumps(result, indent=4))
