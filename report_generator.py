@@ -6,75 +6,112 @@ from dotenv import load_dotenv
 # Load API key from environment
 load_dotenv()
 
+
 def generate_complete_kpi_package_openai(
     data: dict,
-    model_name: str = "gpt-4o-mini"
+    model_name: str = "gpt-4o-mini",
 ) -> dict:
     """
     Generates a complete KPI report package with a single OpenAI API call.
 
-    This function uses one optimized prompt to instruct the LLM to produce a fully
-    structured JSON output with three top-level keys:
-
-    {
-        "Executive_Summary": "...",
-        "KPI_Benchmark": [...],
-        "Analysis_Report": {...}
-    }
-
-    - Executive_Summary: a 3–5 sentence overview of team performance, strengths, and improvements.
-    - KPI_Benchmark: a list of metrics with fields "Metric", "Current Value", "Target Value", and "Status".
-    - Analysis_Report: an object with analytical paragraphs (2–4 sentences) for each process category.
+    Returns JSON with top-level keys: "Executive_Summary", "KPI_Benchmark", "Analysis_Report".
     """
 
     # Initialize client with your OpenAI API key
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY", "").strip().strip('"').strip("'"))
 
-    # Compress input data to compact JSON for efficient token usage
+    # Compact input data for efficient token usage
     compact = json.dumps(data, separators=(",", ":"))
 
-    # --- SYSTEM PROMPT: Guides LLM to output structured business insight JSON ---
-    system_msg = (
-    
-      "You are a senior process intelligence analyst. "
-        "Two datasets are provided: 'Current_Project_Data' (Team 1) and 'Related_Project_Data' (Team 2, the target/benchmark). "
-        "Return a concise, well-structured JSON report with exactly three top-level keys: "
-        "'Executive_Summary', 'KPI_Benchmark', and 'Analysis_Report'.\n\n"
+    # --- SYSTEM PROMPT ---
+    system_msg = ("""
+            You are a senior process intelligence analyst.
 
-        "1. Executive_Summary: 3–5 sentences. Provide a comparative evaluation between Team 1 and Team 2: "
-        "which team performs better and why. Combine observation, interpretation, and summary into one coherent paragraph.\n\n"
+            Two datasets are provided:
+            - "Current_Project_Data" (Team 1)
+            - "Related_Project_Data" (Team 2, the benchmark)
+
+            Return a concise, well-structured JSON report with exactly three top-level keys:
+            "Executive_Summary", "KPI_Benchmark", and "Analysis_Report".
+
+            ---
+
+            1. Executive_Summary:
+            Write 3–5 sentences comparing Team 1 and Team 2. Clearly explain which team performs better and why, combining observation, interpretation, and summary into one cohesive paragraph.
+
+            ---
+
+            2. KPI_Benchmark:
+            Produce an array of objects with the exact following structure:
+            {
+            "Metric": "<name>",
+            "Team_1_Label": "Team 1 (<Dept from KPI_DATA.Metadata>)",
+            "Team_2_Label": "Team 2 (<Dept from KPI_DATA.Metadata>)",
+            "Team_1_Value": <value>,
+            "Team_2_Value": <value>,
+            "Status": "<Team 1 higher by X.X% | Team 2 higher by X.X% | Equal | Team X took Y more <units>>"
+            }
+
+            Rules:
+            - All key names must match exactly as shown.
+            - Use department names from KPI_DATA.Metadata for Team_1_Label and Team_2_Label.
+            - Compute comparisons relative to the lower team’s value:
+            • If Team1 > Team2: X.X = ((Team1 - Team2) / Team2) * 100 → "Team 1 higher by X.X%"
+            • If Team2 > Team1: X.X = ((Team2 - Team1) / Team1) * 100 → "Team 2 higher by X.X%"
+            • If equal: "Equal"
+            - Round X.X to one decimal place and include the '%' sign.
+
+            Formatting by metric type:
+            • **Proportion / Ratio Metrics** (include "Rate", "Ratio", "First Pass Rate", "First Pass Yield", "FPY", "Process Efficiency Ratio"):
+            - Convert values between 0–1 to percentages (×100).
+            - Display both team values as percentages with one decimal place.
+            - Use percentage-based comparison for Status.
+            • **Time / Duration Metrics** (include "time", "duration", "waiting", or units like "hours", "days", "minutes"):
+            - Do not use percentages for Status.
+            - Compute absolute difference: Y = |Team1 - Team2|, rounded to one decimal.
+            - Format Status as: "Team X took Y more <units>" (units inferred from the metric or KPI data).
+            • **Other Numeric Metrics**:
+            - Keep numeric values as-is (no unit conversion).
+            - Use absolute delta wording if percentage difference is not meaningful.
+
+            Ensure:
+            - Exactly one Status per metric (no duplicates).
+            - Consistent rounding and formatting.
+            - No extra commentary in output.
+
+            Metric Type Reference:
+            - Average Cycle Time → time (hours; use KPI data unit if available)
+            - Idle Time Ratio → proportion (%)
+            - Dropout Rate → proportion (%)
+            - First Pass Rate → proportion (%)
+            - Bottleneck Duration → time (hours)
+            - Time Lost to Bottleneck → time (hours)
+
+            ---
+
+            3. Analysis_Report:
+            Return a nested object with the following keys, each containing 2–4 sentences that combine evaluation, observation, interpretation, and recommendations:
+            {
+            "loop_analysis": { "loop_analysis": "..." },
+            "bottleneck_analysis": { "bottleneck_analysis": "..." },
+            "dropout_analysis": { "dropout_analysis": "..." },
+            "happy_path": { "happy_path": "..." },
+            "recommendation_to_action": { "recommendation_to_action": "..." },
+            "method_notes": { "method_notes": "..." },
+            "appendix": { "appendix": "[Brief supporting notes: metric definitions, calculation formulas, assumptions, data caveats/coverage, thresholds or parameters used, and any references to source fields.]" }
+            }
+
+            ---
+
+            Output Rules:
+            - Return **valid JSON only** (no markdown, no commentary).
+            - Preserve numeric meaning.
+            - Use "N/A" only when data is unavailable.
+            - The Appendix must never be "N/A" — always include at least minimal supporting notes.
+            """)
 
 
-
-        "2. KPI_Benchmark: An array of objects with these exact fields: \n"
-        "   {\n"
-        "     \"Metric\": \"<name>\",\n"
-        "     \"Team 1 (<Dept from KPI_DATA.Metadata>)\": <value>,\n"
-        "     \"Team 2 (<Dept from KPI_DATA.Metadata>)\": <value>,\n"
-        "     \"Status (Team 1 vs Team 2)\": \"<Team 1 - X.X% Above Target|Team 1 - X.X% Below Target|Equal>\"\n"
-        "   }\n"
-        "   Rules: Use department names from KPI_DATA.Metadata for the headers. Compute percentage as ((Team1 - Team2)/Team2)*100, "
-        "round to 1 decimal, include the % sign, and explicitly name which team is above/below: if Team1>Team2 use 'Team 1 - X.X% Above Target'; if Team1<Team2 use 'Team 1 - X.X% Below Target'; if equal use 'Equal'. "
-        "For metrics that represent proportions (names include 'Rate' or 'Ratio', e.g., 'Dropout Rate', 'First Pass Rate', 'First Pass Yield', 'FPY', 'Process Efficiency Ratio'), format Team 1 and Team 2 values as percentages with the % symbol. "
-        "If such values are provided as decimals between 0 and 1 (e.g., 0.49), convert to percentages (49.0%) with 1 decimal place. For other metrics, keep numeric values without units.\n\n"
-
-
-
-        "3. Analysis_Report: A nested object with the following keys and 2–4 sentences each, combining evaluation,observation, interpretation, and recommendations: \n"
-        "{\n"
-        "  \"loop_analysis\": { \"loop_analysis\": \"...\" },\n"
-        "  \"bottleneck_analysis\": { \"bottleneck_analysis\": \"...\" },\n"
-        "  \"dropout_analysis\": { \"dropout_analysis\": \"...\" },\n"
-        "  \"happy_path\": { \"happy_path\": \"...\" },\n"
-        "  \"recommendation_to_action\": { \"recommendation_to_action\": \"...\" },\n"
-        "  \"method_notes\": { \"method_notes\": \"...\" },\n"
-        "  \"appendix\": { \"appendix\": \"[Brief supporting notes: metric definitions, calculation formulas, assumptions, data caveats/coverage, thresholds or parameters used, and any references to source fields.]\" }\n"
-        "}\n\n"
-
-        "Output rules: valid JSON only (no markdown), preserve numeric meaning, no extra commentary. Use 'N/A' only when data is unavailable; however, the Appendix must not be 'N/A'—always include brief supporting notes (even if minimal)."
-    )
-
-    # --- USER PROMPT: Includes KPI data context ---
+    # --- USER PROMPT ---
     user_msg = f"KPI_DATA:{compact}"
 
     # --- SINGLE OPENAI CALL ---
@@ -84,8 +121,8 @@ def generate_complete_kpi_package_openai(
             {"role": "system", "content": system_msg},
             {"role": "user", "content": user_msg},
         ],
-        temperature=0.2,     # Lower temperature for factual, consistent outputs
-        max_tokens=2000,     # Enough room for large reports
+        temperature=0.2,
+        max_tokens=2000,
     )
 
     # Extract model output safely
@@ -96,26 +133,24 @@ def generate_complete_kpi_package_openai(
         or ""
     ).strip()
 
-    # Check for empty output
     if not text:
         raise ValueError("Empty response from OpenAI (KPI package).")
 
-    # --- Robust JSON parsing ---
+    # Robust JSON parsing
     try:
-        # Try direct parsing
         return json.loads(text)
     except json.JSONDecodeError:
-        # If LLM adds stray text, trim to JSON boundaries
         s, e = text.find("{"), text.rfind("}") + 1
         if s != -1 and e > s:
             return json.loads(text[s:e])
-        raise ValueError(f"❌ Failed to parse valid JSON from OpenAI output:\n{text}")
+        raise ValueError(f"Failed to parse valid JSON from OpenAI output:\n{text}")
 
 
 # ===================== TEST USAGE =====================
 if __name__ == "__main__":
     from data import test_data  # Must contain valid KPI dataset
 
-    print("🧠 Generating complete KPI package (OpenAI)...\n")
+    print("Generating complete KPI package (OpenAI)...\n")
     result = generate_complete_kpi_package_openai(test_data)
     print(json.dumps(result, indent=4))
+
