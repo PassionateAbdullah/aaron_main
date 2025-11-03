@@ -45,12 +45,12 @@ def generate_complete_kpi_package_openai(
             Produce an array of objects with the exact following structure:
             {
             "Metric": "<name>",
-            "Team_1_Label": "Team 1 (<Dept from KPI_DATA.Metadata>)",
-            "Team_2_Label": "Team 2 (<Dept from KPI_DATA.Metadata>)",
+            "Team_1_Label": take the value of the "(team)(department)" KPI_DATA.Metadata" output format - team(department)",
+            "Team_2_Label": take the value of the "(team)(department)" KPI_DATA.Metadata output format - team(department)",
             "Team_1_Value": <value>,
             "Team_2_Value": <value>,
             "Status": "<Team 1 higher by X.X% | Team 2 higher by X.X% | Equal | Team X took Y more <units>>"
-            }
+            }}
 
             Rules:
             - All key names must match exactly as shown.
