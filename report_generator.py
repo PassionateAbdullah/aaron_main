@@ -50,7 +50,7 @@ def generate_complete_kpi_package_openai(
             "Team_1_Value": <value>,
             "Team_2_Value": <value>,
             "Status": "<Team 1 higher by X.X% | Team 2 higher by X.X% | Equal | Team X took Y more <units>>"
-            }}
+            }
 
             Rules:
             - All key names must match exactly as shown.
@@ -69,7 +69,9 @@ def generate_complete_kpi_package_openai(
             • **Time / Duration Metrics** (include "time", "duration", "waiting", or units like "hours", "days", "minutes"):
             - Do not use percentages for Status.
             - Compute absolute difference: Y = |Team1 - Team2|, rounded to one decimal.
-            - Format Status as: "Team X took Y more <units>" (units inferred from the metric or KPI data).
+            - Extract the team name (text before '(') from Team_1_Label or Team_2_Label, whichever has the higher value.
+            - Format Status as: "<Team_Name> took Y more <units>" (e.g., "Team Alpha took 20.2 more hours").
+            - Never use generic names like 'Team 1' or 'Team 2' — always use the actual team name extracted from the label.
             • **Other Numeric Metrics**:
             - Keep numeric values as-is (no unit conversion).
             - Use absolute delta wording if percentage difference is not meaningful.

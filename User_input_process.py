@@ -42,9 +42,6 @@ Output format:
     "remove_bottlenecks": boolean,
     "remove_loops": boolean,
     "remove_dropouts": boolean,
-    "target_activity": string | null,
-    "case": string | null,
-    "target_percentage": number | null
 }
 
 Key examples:
@@ -53,9 +50,6 @@ Key examples:
     "remove_bottlenecks": false,
     "remove_loops": false,
     "remove_dropouts": false,
-    "target_activity": "Payment Monitoring",
-    "case": "Loop",
-    "target_percentage": null
 }
 
 "reduce cost by 20% in payment received step" →
@@ -63,9 +57,6 @@ Key examples:
     "remove_bottlenecks": true,
     "remove_loops": true,
     "remove_dropouts": false,
-    "target_activity": "Payment Received",
-    "case": null,
-    "target_percentage": 20
 }
 
 Return ONLY the JSON with no additional text or explanation."""
@@ -100,9 +91,9 @@ def parse_process_intent(user_input: str) -> Dict[str, object]:
             "remove_bottlenecks": bool(result.get("remove_bottlenecks", False)),
             "remove_loops": bool(result.get("remove_loops", False)),
             "remove_dropouts": bool(result.get("remove_dropouts", False)),
-            "target_activity": str(result["target_activity"]) if result.get("target_activity") else None,
-            "case": str(result["case"]) if result.get("case") else None,
-            "target_percentage": float(result["target_percentage"]) if result.get("target_percentage") else None
+            # "target_activity": str(result["target_activity"]) if result.get("target_activity") else None,
+            # "case": str(result["case"]) if result.get("case") else None,
+            # "target_percentage": float(result["target_percentage"]) if result.get("target_percentage") else None
         }
     except Exception as e:
         # If anything fails, return a safe default
@@ -111,9 +102,9 @@ def parse_process_intent(user_input: str) -> Dict[str, object]:
             "remove_bottlenecks": False,
             "remove_loops": False,
             "remove_dropouts": False,
-            "target_activity": None,
-            "case": None,
-            "target_percentage": None,
+            # "target_activity": None,
+            # "case": None,
+            # "target_percentage": None,
         }
 
 
