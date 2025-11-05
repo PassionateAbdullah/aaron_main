@@ -5,7 +5,7 @@ test_data = {
             "project_id": 39,
             "process_name": "second process 3",
             "department": "admin 1",
-            "team": "Team fuck"
+            "team": "Team Alpha"
         },
         "KPIs": {
             "cycle_time_metrics": {
@@ -77,7 +77,7 @@ test_data = {
             "project_id": 42,
             "process_name": "process 4",
             "department": "finance 1",
-            "team": "Team suck"
+            "team": "Team Beta"
         },
         "KPIs": {
             "cycle_time_metrics": {

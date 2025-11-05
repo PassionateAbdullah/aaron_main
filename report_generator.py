@@ -53,13 +53,41 @@ def generate_complete_kpi_package_openai(
             }
 
             Rules:
-            - All key names must match exactly as shown.
+            - Keys must match exactly as shown.
             - Use department names from KPI_DATA.Metadata for Team_1_Label and Team_2_Label.
-            - Compute comparisons relative to the lower team’s value:
-            • If Team1 > Team2: X.X = ((Team1 - Team2) / Team2) * 100 → "Team 1 higher by X.X%"
-            • If Team2 > Team1: X.X = ((Team2 - Team1) / Team1) * 100 → "Team 2 higher by X.X%"
-            • If equal: "Equal"
-            - Round X.X to one decimal place and include the '%' sign.
+
+            - Determine which side is better by metric:
+            • Lower is better → "Average Cycle Time", "Bottleneck Duration", "Time Lost to Bottleneck", "Idle Time Ratio", "Dropout Rate".
+            • Higher is better → "First Pass Rate", "First Pass Yield", "Process Efficiency Ratio".
+
+            - Compute the difference once:
+            • higher_value = max(Team_1_Value, Team_2_Value)
+            • lower_value  = min(Team_1_Value, Team_2_Value)
+            • delta_abs    = higher_value - lower_value            # always (higher - lower)
+            • delta_pct    = (delta_abs / lower_value) * 100       # percent relative to the lower value
+            • Round delta_pct to 1 decimal with '%'; round delta_abs to 1 decimal.
+
+            - Choose the label to name in Status:
+            • better_label = Team_1_Label if Team_1_Value is better per the rule above; else Team_2_Label.
+            • worse_label  = the other team.
+            • For time/duration metrics, lower is always better.
+
+            - Status formatting:
+            • Proportion/ratio where higher is better:
+                "Status": "<better_label> performs better by X.X%"
+            • Proportion/ratio where lower is better:
+                "Status": "<better_label> performs better (lower is better) by X.X%"
+            • Time/duration metrics (hours/days/minutes):
+                "Status": "<better_label> performs better (lower is better) by Y <units>"
+            • Equal values → "Status": "Equal"
+
+            - Additional formatting:
+            • Proportion/ratio metrics: display values as percentages with 1 decimal (convert 0–1 to %).
+            • Time/duration metrics: keep original units; use absolute delta Y = delta_abs.
+            • Other numeric metrics: keep numbers as-is; if needed, use absolute delta phrasing.
+
+            - Always use the actual team labels (never literal 'Team 1' or 'Team 2').
+            - Exactly one Status per metric; consistent rounding; no extra commentary.
 
             Formatting by metric type:
             • **Proportion / Ratio Metrics** (include "Rate", "Ratio", "First Pass Rate", "First Pass Yield", "FPY", "Process Efficiency Ratio"):
