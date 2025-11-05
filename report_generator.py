@@ -76,9 +76,9 @@ def generate_complete_kpi_package_openai(
             • Proportion/ratio where higher is better:
                 "Status": "<better_label> performs better by X.X%"
             • Proportion/ratio where lower is better:
-                "Status": "<better_label> performs better (lower is better) by X.X%"
+                "Status": "<better_label> performs better  by X.X%"
             • Time/duration metrics (hours/days/minutes):
-                "Status": "<better_label> performs better (lower is better) by Y <units>"
+                "Status": "<better_label> performs better by Y <units>"
             • Equal values → "Status": "Equal"
 
             - Additional formatting:
