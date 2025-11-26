@@ -52,13 +52,6 @@ Key examples:
     "remove_dropouts": false,
 }
 
-"reduce cost by 20% in payment received step" →
-{
-    "remove_bottlenecks": true,
-    "remove_loops": true,
-    "remove_dropouts": false,
-}
-
 Return ONLY the JSON with no additional text or explanation."""
 
 def parse_process_intent(user_input: str) -> Dict[str, object]:
@@ -108,24 +101,24 @@ def parse_process_intent(user_input: str) -> Dict[str, object]:
         }
 
 
-if __name__ == "__main__":
-    print("Process Analytics Assistant")
-    print("Type 'exit' or press Ctrl+C to quit\n")
+# if __name__ == "__main__":
+#     print("Process Analytics Assistant")
+#     print("Type 'exit' or press Ctrl+C to quit\n")
     
-    while True:
-        try:
-            user_text = input("Your request: ").strip()
-            if not user_text or user_text.lower() == 'exit':
-                break
+#     while True:
+#         try:
+#             user_text = input("Your request: ").strip()
+#             if not user_text or user_text.lower() == 'exit':
+#                 break
                 
-            result = parse_process_intent(user_text)
-            print("\nOutput:")
-            print(json.dumps(result, indent=4))
-            print()
+#             result = parse_process_intent(user_text)
+#             print("\nOutput:")
+#             print(json.dumps(result, indent=4))
+#             print()
             
-        except KeyboardInterrupt:
-            break
-        except Exception as e:
-            print(f"Error: {str(e)}")
+#         except KeyboardInterrupt:
+#             break
+#         except Exception as e:
+#             print(f"Error: {str(e)}")
             
-    print("\nGoodbye!")
+#     print("\nGoodbye!")

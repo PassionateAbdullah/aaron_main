@@ -1,4 +1,4 @@
-﻿data = {
+﻿{
     "global_metrics": {
         "Total_Completed_Cases": 1000,
         "Case_Throughput_Rate_Per_Day": 7.0,
@@ -585,5 +585,5 @@
                 "Loop connections: from 10 to 4 (backward), from 10 to 8 (backward), from 10 to 9 (backward), from 10 to 7 (backward), from 10 to 5 (backward)"
             ]
         }
-    ]       
+    ]
 }
