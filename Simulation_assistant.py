@@ -1,6 +1,14 @@
 # ==========================================================
-# SMART PROCESS MINING CHATBOT — MASTER ARCHITECTURE
-# Single-file production-ready version
+# SMART PROCESS MINING CHATBOT — FINAL MASTER ARCHITECTURE
+# ----------------------------------------------------------
+# Features:
+# - LLM-powered text normalization
+# - LLM-powered intent detection (no keywords!)
+# - Mathematical dataset-grounded analysis engine
+# - Action-mode intent parser
+# - Clean UX (user_response vs backend_output)
+# - Safe JSON loader
+# - CLI interface
 # ==========================================================
 
 import os
@@ -9,25 +17,115 @@ from typing import Dict, Any
 from dotenv import load_dotenv
 from openai import OpenAI
 
-# Load env variables
 load_dotenv()
 
 
 # ==========================================================
-# NORMALIZATION (Minimal, clean)
+# 1. LLM TEXT NORMALIZER
 # ==========================================================
+NORMALIZER_PROMPT = """
+You are a text normalizer.
+
+Rewrite the user’s message into a clean, clear, explicit version
+WITHOUT changing the meaning.
+
+Rules:
+- Keep the meaning exactly the same.
+- Remove filler phrases (e.g., "uhh", "please", "can you maybe")
+- Expand vague commands into explicit instructions.
+- Make the message direct and unambiguous.
+- Keep all technical intent.
+
+Return ONLY the rewritten message.
+"""
+
 def normalize_query(msg: str) -> str:
-    """Return user text without altering meaning."""
-    return msg.strip()
+    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": NORMALIZER_PROMPT},
+                {"role": "user", "content": msg}
+            ],
+            temperature=0.0,
+            max_tokens=100
+        )
+        return response.choices[0].message.content.strip()
+
+    except Exception:
+        return msg.strip()
+
 
 
 # ==========================================================
-# ULTRA-STRONG PROCESS MINING ENGINE
+# 2. LLM INTENT CLASSIFIER
+# ==========================================================
+INTENT_CLASSIFIER_PROMPT = """
+You are an intent classifier for a Process Mining Assistant.
+
+Classify the user's message into EXACTLY one of:
+
+1. "greeting"
+   - The user is greeting or starting a conversation.
+
+2. "action"
+   - The user wants to MODIFY the process model:
+       * remove loops
+       * fix or eliminate bottlenecks
+       * reduce dropouts
+       * clean rework / inefficiencies
+       * structurally optimize the process
+
+3. "analysis"
+   - The user wants insights:
+       * cost analysis
+       * bottleneck explanation
+       * comparisons
+       * root-cause analysis
+       * performance questions
+       * impact calculation
+   - WITHOUT modifying the structure.
+
+Return ONLY:
+"greeting"
+"action"
+"analysis"
+"""
+
+def detect_intent(normalized_message: str) -> str:
+    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": INTENT_CLASSIFIER_PROMPT},
+                {"role": "user", "content": normalized_message}
+            ],
+            temperature=0.0,
+            max_tokens=10
+        )
+
+        label = response.choices[0].message.content.strip().lower()
+
+        if label not in ["greeting", "action", "analysis"]:
+            return "analysis"
+
+        return label
+
+    except Exception:
+        return "analysis"
+
+
+
+# ==========================================================
+# 3. PROCESS MINING ANALYSIS ENGINE
 # ==========================================================
 def generate_process_mining_response(user_message: str, process_data: dict) -> str:
     """
-    Mathematical, dataset-bounded, zero-hallucination
-    process mining analysis engine.
+    Mathematical, dataset-bounded, strict process-mining engine.
     """
 
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -39,77 +137,56 @@ Your ONLY dataset:
 {json.dumps(process_data, indent=2)}
 
 ========================================================
-GLOBAL BEHAVIOR
+RULES
 ========================================================
-You MUST:
-- Think like a mathematician
-- Analyze like a process-mining expert
-- Compare activities precisely
-- Use dataset numbers ONLY
-- Never hallucinate
-- Provide short, dense bullets
-- Maximum 6–8 bullets
+- Always use dataset numbers only.
+- No hallucination.
+- No assumptions.
+- Maximum 6–8 bullets.
+- Bullets must be short, analytical, numeric when needed.
 
 ========================================================
-MATH DEFINITIONS (MANDATORY)
+MANDATORY MATH LOGIC
 ========================================================
 Let:
-- D = avg_duration_seconds
-- C = cost_per_h
-- Loops = frequencies in loopConnections
-- LoopCount = loop_count
-- Drop = dropout_case_count
-- Rework = rework_case_count
-- TotalCount = total_count
-- CaseCount = case_count
+  D = avg_duration_seconds
+  C = cost_per_h
+  Loops = sum of backward loop frequencies
+  Drop = dropout_case_count
+  Rework = rework_case_count
 
-Use the following COST RULES ALWAYS:
+Compute:
+  ActivityCost = (D / 3600) × C
+  LoopCost = ActivityCost × Loops
+  DropoutWaste = ActivityCost × Drop
+  ReworkWaste = ActivityCost × Rework
 
-1) ActivityCost = (D / 3600) × C  
-2) LoopCost = ActivityCost × (sum of backward loop frequencies)  
-3) DropoutWaste = ActivityCost × Drop  
-4) ReworkWaste = ActivityCost × Rework  
-5) BottleneckImpact increases if:
-     • D is significantly above process average OR
-     • The activity is upstream in many loops
+Root-cause analysis must reference:
+  - duration
+  - cost
+  - loop frequency
+  - dropout frequency
+  - upstream vs downstream structure
+  - bottleneck flags
 
-Variant Cost:
-- Sum(activity cost × frequency in variant)
-
-Only compute values using dataset.  
-Never exceed dataset's total process cost: 15369.17 USD.
+Never exceed dataset total process cost: 15369.17 USD.
 
 ========================================================
-RESPONSE FORMAT
+OUTPUT FORMAT
 ========================================================
 - 6–8 bullets
-- Direct answers only
-- Each bullet must reference dataset values
-- If question asks "why" → causal explanation
-- If question asks "which" → direct comparison
-- If question asks "how much" → compute numerically
-- No long paragraphs
-- No invented numbers
-
+- No formulas (only results)
+- Use dataset-backed logic
+- Directly answer user’s question
 ========================================================
-DO NOT:
-- Invent values
-- Use external knowledge
-- Assume missing numbers
-- Produce long paragraphs
-========================================================
-
-Now answer the user's question using ONLY the dataset.
     """
-
-    normalized = normalize_query(user_message)
 
     try:
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[
                 {"role": "system", "content": PROCESS_MINING_SYSTEM_PROMPT},
-                {"role": "user", "content": normalized}
+                {"role": "user", "content": user_message}
             ],
             temperature=0.1,
             max_tokens=450
@@ -120,12 +197,12 @@ Now answer the user's question using ONLY the dataset.
         return f"[ERROR] Analysis failed: {e}"
 
 
-# ==========================================================
-# ACTION MODE — INTENT PARSER
-# ==========================================================
 
+# ==========================================================
+# 4. ACTION MODE — PARSE USER'S STRUCTURAL COMMANDS
+# ==========================================================
 INTENT_SYSTEM_PROMPT = """
-Parse optimization requests into strict JSON:
+Parse structural optimization requests into strict JSON:
 
 {
   "remove_bottlenecks": boolean,
@@ -134,10 +211,9 @@ Parse optimization requests into strict JSON:
 }
 
 Rules:
-- If user says: remove, fix, eliminate, reduce, clean, optimize → TRUE
-- Only these 3 flags may exist
-- Always return all fields
-- Never add extra fields
+- If user instructs to clean/remove/fix/update/optimize loops, bottlenecks, or dropouts → TRUE.
+- Always return all three fields.
+- Only return these fields.
 """
 
 def parse_process_intent(user_input: str) -> Dict[str, object]:
@@ -153,6 +229,7 @@ def parse_process_intent(user_input: str) -> Dict[str, object]:
             temperature=0.0,
             max_tokens=150
         )
+
         parsed = json.loads(response.choices[0].message.content.strip())
 
         return {
@@ -169,65 +246,26 @@ def parse_process_intent(user_input: str) -> Dict[str, object]:
         }
 
 
-# ==========================================================
-# INTENT DETECTION LOGIC
-# ==========================================================
-ACTION_KEYWORDS = [
-    "remove bottlenecks",
-    "remove loops",
-    "remove dropouts",
-    "fix bottlenecks",
-    "fix loops",
-    "fix dropouts",
-    "eliminate bottlenecks",
-    "eliminate loops",
-    "eliminate dropouts",
-    "clean loops",
-    "clean rework",
-    "clean inefficiencies",
-    "clean dropouts",
-    "clean it",
-    "clean that",
-    "remove the dropout",
-    "reduce dropout",
-    "reduce the bottlenecks",
-    "reduce bottleneck",
-    "reduce the loops",
-    "reduce loop",
-    "optimize bottlenecks",
-    "optimize loops",
-    "optimize dropouts",
-    "optimize it",
-    "optimize that",
-    "clean bottlenecks",
-    
-]
-GREETING_KEYWORDS = ["hi", "hello", "hey", "good morning", "good afternoon", "good evening"]
-
-def detect_intent(user_message: str) -> str:
-    text = user_message.lower()
-
-    # Greeting mode
-    if any(text.startswith(g) for g in GREETING_KEYWORDS):
-        return "greeting"
-
-    # Action mode
-    if any(k in text for k in ACTION_KEYWORDS):
-        return "action"
-
-    # Everything else = analysis mode
-    return "analysis"
-
 
 # ==========================================================
-# MAIN CHATBOT CONTROLLER
+# 5. MAIN CHATBOT CONTROLLER
 # ==========================================================
 def dynamic_process_chatbot(user_message: str, process_json: Dict[str, Any]) -> Dict[str, Any]:
-    intent = detect_intent(user_message)
 
-    # --------------------------
-    # GREETING MODE
-    # --------------------------
+    # -----------------------------
+    # Step 1 — Normalize user text
+    # -----------------------------
+    normalized = normalize_query(user_message)
+
+    # -----------------------------
+    # Step 2 — Detect intent
+    # -----------------------------
+    intent = detect_intent(normalized)
+
+    # -----------------------------
+    # Step 3 — Route based on intent
+    # -----------------------------
+
     if intent == "greeting":
         return {
             "mode": "greeting",
@@ -235,21 +273,16 @@ def dynamic_process_chatbot(user_message: str, process_json: Dict[str, Any]) -> 
             "backend_output": None
         }
 
-    # --------------------------
-    # ANALYSIS MODE
-    # --------------------------
     if intent == "analysis":
-        answer = generate_process_mining_response(user_message, process_json)
+        answer = generate_process_mining_response(normalized, process_json)
         return {
             "mode": "analysis",
             "user_response": answer,
             "backend_output": None
         }
 
-    # --------------------------
-    # ACTION MODE
-    # --------------------------
-    parsed_json = parse_process_intent(user_message)
+    # action mode
+    parsed_json = parse_process_intent(normalized)
 
     user_msg = (
         "Got it! 👍 Your optimization request is understood.\n"
@@ -258,15 +291,16 @@ def dynamic_process_chatbot(user_message: str, process_json: Dict[str, Any]) -> 
 
     return {
         "mode": "action",
-        "user_response": user_msg,      # what the user sees
-        "backend_output": parsed_json   # internal action JSON, separate & clean
+        "user_response": user_msg,
+        "backend_output": parsed_json
     }
 
+
+
 # ==========================================================
-# SAFE JSON LOADER
+# 6. LOAD JSON DATASET SAFELY
 # ==========================================================
 def load_process_data(path: str) -> dict:
-
     if not os.path.exists(path):
         raise FileNotFoundError(f"Process data file not found: {path}")
 
@@ -285,8 +319,9 @@ def load_process_data(path: str) -> dict:
     raise ValueError("Invalid JSON format.")
 
 
+
 # ==========================================================
-# CLI RUNNER
+# 7. CLI APPLICATION
 # ==========================================================
 def run_chatbot():
     print("🟢 Smart Process Mining Chatbot")
@@ -295,11 +330,12 @@ def run_chatbot():
     try:
         process_json = load_process_data("aaron_data.json")
     except Exception as e:
-        print("[Error loading dataset]", e)
+        print("[Error loading dataset]:", e)
         return
 
     while True:
         user_message = input("You: ").strip()
+
         if user_message.lower() in ["exit", "quit"]:
             print("Goodbye! 👋")
             break
@@ -314,6 +350,9 @@ def run_chatbot():
             print("🔧 Backend Output:", out["backend_output"], "\n")
 
 
-# Run if executed directly
+
+# ==========================================================
+# MAIN RUNNER
+# ==========================================================
 if __name__ == "__main__":
     run_chatbot()
