@@ -250,50 +250,18 @@ def parse_process_intent(user_input: str) -> Dict[str, object]:
 # ==========================================================
 # 5. MAIN CHATBOT CONTROLLER
 # ==========================================================
-def dynamic_process_chatbot(user_message: str, process_json: Dict[str, Any]) -> Dict[str, Any]:
-
-    # -----------------------------
-    # Step 1 — Normalize user text
-    # -----------------------------
+def dynamic_process_chatbot(user_message: str, process_json: Dict[str, Any]):
     normalized = normalize_query(user_message)
-
-    # -----------------------------
-    # Step 2 — Detect intent
-    # -----------------------------
     intent = detect_intent(normalized)
 
-    # -----------------------------
-    # Step 3 — Route based on intent
-    # -----------------------------
-
     if intent == "greeting":
-        return {
-            "mode": "greeting",
-            "user_response": "Hey! 😊 I'm your Simulation Assistant. How can I help you today?",
-            "backend_output": None
-        }
+        return "Hey! 😊 I'm your Simulation Assistant. How can I help you today?"
 
     if intent == "analysis":
-        answer = generate_process_mining_response(normalized, process_json)
-        return {
-            "mode": "analysis",
-            "user_response": answer,
-            "backend_output": None
-        }
+        return generate_process_mining_response(normalized, process_json)
 
     # action mode
-    parsed_json = parse_process_intent(normalized)
-
-    user_msg = (
-        "Got it! 👍 Your optimization request is understood.\n"
-        "We are applying updates to the process model now..."
-    )
-
-    return {
-        "mode": "action",
-        "user_response": user_msg,
-        "backend_output": parsed_json
-    }
+    return parse_process_intent(normalized)
 
 
 
@@ -340,14 +308,11 @@ def run_chatbot():
             print("Goodbye! 👋")
             break
 
-        out = dynamic_process_chatbot(user_message, process_json)
+        response = dynamic_process_chatbot(user_message, process_json)
 
         print("\n--- Chatbot Response ---")
-        print(out["user_response"])
+        print(response)
         print("------------------------\n")
-
-        if out["mode"] == "action":
-            print("🔧 Backend Output:", out["backend_output"], "\n")
 
 
 
