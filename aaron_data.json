@@ -1,589 +1,641 @@
 ﻿{
-    "global_metrics": {
-        "Total_Completed_Cases": 1000,
-        "Case_Throughput_Rate_Per_Day": 7.0,
-        "Max_Steps_in_a_Case": 27,
-        "Most_Frequent_Path": "ReceiveOrder -> ValidateData -> CheckStock -> ApproveOrder -> PrepareInvoice -> InvoiceSend -> PackGoods -> ShipGoods -> ConfirmDelivery -> ArchiveCase",
-        "Cycle_Time": {
-            "Average": "4d 2h 4m 41.58s",
-            "Median": "4d 4h 20m 37.0s",
-            "Min": "28m 14.0s",
-            "Max": "12d 34m 38.0s"
-        },
-        "Variant_Analysis": {
-            "Total_Number_of_Process_Variants": 105,
-            "Top_5_Process_Variants": [
-                {
-                    "sequence": [
-                        "ReceiveOrder",
-                        "ValidateData",
-                        "CheckStock",
-                        "ApproveOrder",
-                        "PrepareInvoice",
-                        "InvoiceSend",
-                        "PackGoods",
-                        "ShipGoods",
-                        "ConfirmDelivery",
-                        "ArchiveCase"
-                    ],
-                    "count": 737,
-                    "percentage": 73.7
-                },
-                {
-                    "sequence": [
-                        "ReceiveOrder",
-                        "ValidateData",
-                        "CheckStock"
-                    ],
-                    "count": 25,
-                    "percentage": 2.5
-                },
-                {
-                    "sequence": [
-                        "ReceiveOrder",
-                        "ValidateData",
-                        "CheckStock",
-                        "ApproveOrder",
-                        "PrepareInvoice",
-                        "InvoiceSend",
-                        "PackGoods"
-                    ],
-                    "count": 21,
-                    "percentage": 2.1
-                },
-                {
-                    "sequence": [
-                        "ReceiveOrder",
-                        "ValidateData",
-                        "CheckStock",
-                        "ApproveOrder",
-                        "PrepareInvoice"
-                    ],
-                    "count": 19,
-                    "percentage": 1.9
-                },
-                {
-                    "sequence": [
-                        "ReceiveOrder",
-                        "ValidateData",
-                        "CheckStock",
-                        "ApproveOrder",
-                        "PrepareInvoice",
-                        "InvoiceSend"
-                    ],
-                    "count": 16,
-                    "percentage": 1.6
-                }
-            ]
-        },
-        "Rework_Analysis_Simplified": {
-            "Activities_In_Loops_Count": 7,
-            "Time_Lost_Simplified_Basis": "Loop details embedded in 'loopConnections'."
-        },
-        "Bottleneck_Analysis_Simplified": {
-            "Bottlenecks_Based_on_Avg_Duration_Count": 3,
-            "Time_Lost_Simplified_Basis": "Bottlenecks flagged if avg duration > overall log avg duration."
-        },
-        "Cost_Analysis": {
-            "Total_Process_Cost": 15369.17,
-            "Currency": "USD"
-        },
-        "happy_path": false
+  "global_metrics": {
+    "Total_Completed_Cases": 1000,
+    "Case_Throughput_Rate_Per_Day": 7.0,
+    "Max_Steps_in_a_Case": 27,
+    "Most_Frequent_Path": "ReceiveOrder -> ValidateData -> CheckStock -> ApproveOrder -> PrepareInvoice -> InvoiceSend -> PackGoods -> ShipGoods -> ConfirmDelivery -> ArchiveCase",
+    "Cycle_Time": {
+      "Average": "4d 2h 4m 41.58s",
+      "Median": "4d 4h 20m 37.0s",
+      "Min": "28m 14.0s",
+      "Max": "12d 34m 38.0s"
     },
-    "process_flow_nodes": [
+    "Variant_Analysis": {
+      "Total_Number_of_Process_Variants": 105,
+      "Top_5_Process_Variants": [
         {
-            "label": "ReceiveOrder",
-            "Activity": "ReceiveOrder",
-            "total_count": 1000,
-            "case_count": 1000,
-            "rework_case_count": null,
-            "dropout_case_count": null,
-            "isBottleneck": false,
-            "bottleneck_occurrence_event_count": 0,
-            "hasLoop": false,
-            "isDropout": false,
-            "activity_id": "1",
-            "loopConnections": null,
-            "loop_count": 0,
-            "cost_per_h": 0.0,
-            "avg_duration_seconds": 302.511,
-            "id": "1",
-            "value": "5.04",
-            "status": "in-progress",
-            "owner": "N/A",
-            "descriptions": [
-                "Activity executed in 1000 unique cases.",
-                "Total events executed: 1000 times.",
-                "Average processing time: 5m 2.51s",
-                "No loops detected."
-            ]
+          "sequence": [
+            "ReceiveOrder",
+            "ValidateData",
+            "CheckStock",
+            "ApproveOrder",
+            "PrepareInvoice",
+            "InvoiceSend",
+            "PackGoods",
+            "ShipGoods",
+            "ConfirmDelivery",
+            "ArchiveCase"
+          ],
+          "count": 737,
+          "percentage": 73.7
         },
         {
-            "label": "ValidateData",
-            "Activity": "ValidateData",
-            "total_count": 1081,
-            "case_count": 1000,
-            "rework_case_count": 69.0,
-            "dropout_case_count": null,
-            "isBottleneck": false,
-            "bottleneck_occurrence_event_count": 0,
-            "hasLoop": true,
-            "isDropout": false,
-            "activity_id": "2",
-            "loopConnections": null,
-            "loop_count": 0,
-            "cost_per_h": 0.0,
-            "avg_duration_seconds": 759.099907493,
-            "id": "2",
-            "value": "12.65",
-            "status": "in-progress",
-            "owner": "N/A",
-            "descriptions": [
-                "Activity executed in 1000 unique cases.",
-                "Total events executed: 1081 times.",
-                "Average processing time: 12m 39.1s",
-                "No loops detected."
-            ]
+          "sequence": [
+            "ReceiveOrder",
+            "ValidateData",
+            "CheckStock"
+          ],
+          "count": 25,
+          "percentage": 2.5
         },
         {
-            "label": "CheckStock",
-            "Activity": "CheckStock",
-            "total_count": 1176,
-            "case_count": 1000,
-            "rework_case_count": 112.0,
-            "dropout_case_count": 25.0,
-            "isBottleneck": false,
-            "bottleneck_occurrence_event_count": 0,
-            "hasLoop": true,
-            "isDropout": true,
-            "activity_id": "3",
-            "loopConnections": null,
-            "loop_count": 0,
-            "cost_per_h": 0.0,
-            "avg_duration_seconds": 535.863095238,
-            "id": "3",
-            "value": "8.93",
-            "status": "in-progress",
-            "owner": "N/A",
-            "descriptions": [
-                "Activity executed in 1000 unique cases.",
-                "Total events executed: 1176 times.",
-                "Average processing time: 8m 55.86s",
-                "No loops detected."
-            ]
+          "sequence": [
+            "ReceiveOrder",
+            "ValidateData",
+            "CheckStock",
+            "ApproveOrder",
+            "PrepareInvoice",
+            "InvoiceSend",
+            "PackGoods"
+          ],
+          "count": 21,
+          "percentage": 2.1
         },
         {
-            "label": "ApproveOrder",
-            "Activity": "ApproveOrder",
-            "total_count": 1190,
-            "case_count": 975,
-            "rework_case_count": 127.0,
-            "dropout_case_count": 12.0,
-            "isBottleneck": true,
-            "bottleneck_occurrence_event_count": 0,
-            "hasLoop": true,
-            "isDropout": false,
-            "activity_id": "4",
-            "loopConnections": [
-                {
-                    "from": "4",
-                    "to": "3",
-                    "loop_with": "CheckStock",
-                    "loop_type": "backward",
-                    "frequency": 45
-                },
-                {
-                    "from": "4",
-                    "to": "2",
-                    "loop_with": "ValidateData",
-                    "loop_type": "backward",
-                    "frequency": 38
-                }
-            ],
-            "loop_count": 2,
-            "cost_per_h": 0.0,
-            "avg_duration_seconds": 2559.571428571,
-            "id": "4",
-            "value": "42.66",
-            "status": "in-progress",
-            "owner": "N/A",
-            "descriptions": [
-                "Activity executed in 975 unique cases.",
-                "Total events executed: 1190 times.",
-                "Average processing time: 42m 39.57s",
-                "Loop connections: from 4 to 3 (backward), from 4 to 2 (backward)"
-            ]
+          "sequence": [
+            "ReceiveOrder",
+            "ValidateData",
+            "CheckStock",
+            "ApproveOrder",
+            "PrepareInvoice"
+          ],
+          "count": 19,
+          "percentage": 1.9
         },
         {
-            "label": "PrepareInvoice",
-            "Activity": "PrepareInvoice",
-            "total_count": 1113,
-            "case_count": 963,
-            "rework_case_count": 105.0,
-            "dropout_case_count": 19.0,
-            "isBottleneck": false,
-            "bottleneck_occurrence_event_count": 0,
-            "hasLoop": true,
-            "isDropout": true,
-            "activity_id": "5",
-            "loopConnections": [
-                {
-                    "from": "5",
-                    "to": "2",
-                    "loop_with": "ValidateData",
-                    "loop_type": "backward",
-                    "frequency": 27
-                },
-                {
-                    "from": "5",
-                    "to": "3",
-                    "loop_with": "CheckStock",
-                    "loop_type": "backward",
-                    "frequency": 25
-                },
-                {
-                    "from": "5",
-                    "to": "4",
-                    "loop_with": "ApproveOrder",
-                    "loop_type": "backward",
-                    "frequency": 19
-                }
-            ],
-            "loop_count": 3,
-            "cost_per_h": 0.0,
-            "avg_duration_seconds": 895.856244384,
-            "id": "5",
-            "value": "14.93",
-            "status": "in-progress",
-            "owner": "N/A",
-            "descriptions": [
-                "Activity executed in 963 unique cases.",
-                "Total events executed: 1113 times.",
-                "Average processing time: 14m 55.86s",
-                "Loop connections: from 5 to 2 (backward), from 5 to 3 (backward), from 5 to 4 (backward)"
-            ]
-        },
-        {
-            "label": "InvoiceSend",
-            "Activity": "InvoiceSend",
-            "total_count": 1036,
-            "case_count": 944,
-            "rework_case_count": 73.0,
-            "dropout_case_count": 21.0,
-            "isBottleneck": false,
-            "bottleneck_occurrence_event_count": 0,
-            "hasLoop": true,
-            "isDropout": true,
-            "activity_id": "6",
-            "loopConnections": [
-                {
-                    "from": "6",
-                    "to": "3",
-                    "loop_with": "CheckStock",
-                    "loop_type": "backward",
-                    "frequency": 14
-                },
-                {
-                    "from": "6",
-                    "to": "5",
-                    "loop_with": "PrepareInvoice",
-                    "loop_type": "backward",
-                    "frequency": 12
-                },
-                {
-                    "from": "6",
-                    "to": "2",
-                    "loop_with": "ValidateData",
-                    "loop_type": "backward",
-                    "frequency": 9
-                },
-                {
-                    "from": "6",
-                    "to": "4",
-                    "loop_with": "ApproveOrder",
-                    "loop_type": "backward",
-                    "frequency": 7
-                }
-            ],
-            "loop_count": 4,
-            "cost_per_h": 0.0,
-            "avg_duration_seconds": 338.03088803,
-            "id": "6",
-            "value": "5.63",
-            "status": "in-progress",
-            "owner": "N/A",
-            "descriptions": [
-                "Activity executed in 944 unique cases.",
-                "Total events executed: 1036 times.",
-                "Average processing time: 5m 38.03s",
-                "Loop connections: from 6 to 3 (backward), from 6 to 5 (backward), from 6 to 2 (backward), from 6 to 4 (backward)"
-            ]
-        },
-        {
-            "label": "PackGoods",
-            "Activity": "PackGoods",
-            "total_count": 978,
-            "case_count": 923,
-            "rework_case_count": 47.0,
-            "dropout_case_count": 21.0,
-            "isBottleneck": true,
-            "bottleneck_occurrence_event_count": 0,
-            "hasLoop": true,
-            "isDropout": true,
-            "activity_id": "7",
-            "loopConnections": [
-                {
-                    "from": "7",
-                    "to": "6",
-                    "loop_with": "InvoiceSend",
-                    "loop_type": "backward",
-                    "frequency": 8
-                },
-                {
-                    "from": "7",
-                    "to": "3",
-                    "loop_with": "CheckStock",
-                    "loop_type": "backward",
-                    "frequency": 7
-                },
-                {
-                    "from": "7",
-                    "to": "4",
-                    "loop_with": "ApproveOrder",
-                    "loop_type": "backward",
-                    "frequency": 7
-                },
-                {
-                    "from": "7",
-                    "to": "2",
-                    "loop_with": "ValidateData",
-                    "loop_type": "backward",
-                    "frequency": 4
-                },
-                {
-                    "from": "7",
-                    "to": "5",
-                    "loop_with": "PrepareInvoice",
-                    "loop_type": "backward",
-                    "frequency": 3
-                }
-            ],
-            "loop_count": 5,
-            "cost_per_h": 0.0,
-            "avg_duration_seconds": 1672.213701431,
-            "id": "7",
-            "value": "27.87",
-            "status": "in-progress",
-            "owner": "N/A",
-            "descriptions": [
-                "Activity executed in 923 unique cases.",
-                "Total events executed: 978 times.",
-                "Average processing time: 27m 52.21s",
-                "Loop connections: from 7 to 6 (backward), from 7 to 3 (backward), from 7 to 4 (backward), from 7 to 2 (backward), from 7 to 5 (backward)"
-            ]
-        },
-        {
-            "label": "ShipGoods",
-            "Activity": "ShipGoods",
-            "total_count": 931,
-            "case_count": 902,
-            "rework_case_count": 24.0,
-            "dropout_case_count": 17.0,
-            "isBottleneck": true,
-            "bottleneck_occurrence_event_count": 79,
-            "hasLoop": true,
-            "isDropout": true,
-            "activity_id": "8",
-            "loopConnections": [
-                {
-                    "from": "8",
-                    "to": "7",
-                    "loop_with": "PackGoods",
-                    "loop_type": "backward",
-                    "frequency": 4
-                },
-                {
-                    "from": "8",
-                    "to": "6",
-                    "loop_with": "InvoiceSend",
-                    "loop_type": "backward",
-                    "frequency": 4
-                },
-                {
-                    "from": "8",
-                    "to": "3",
-                    "loop_with": "CheckStock",
-                    "loop_type": "backward",
-                    "frequency": 3
-                },
-                {
-                    "from": "8",
-                    "to": "4",
-                    "loop_with": "ApproveOrder",
-                    "loop_type": "backward",
-                    "frequency": 2
-                },
-                {
-                    "from": "8",
-                    "to": "2",
-                    "loop_with": "ValidateData",
-                    "loop_type": "backward",
-                    "frequency": 2
-                },
-                {
-                    "from": "8",
-                    "to": "5",
-                    "loop_with": "PrepareInvoice",
-                    "loop_type": "backward",
-                    "frequency": 1
-                }
-            ],
-            "loop_count": 6,
-            "cost_per_h": 0.0,
-            "avg_duration_seconds": 7140.603651987,
-            "id": "8",
-            "value": "119.01",
-            "status": "in-progress",
-            "owner": "N/A",
-            "descriptions": [
-                "Activity executed in 902 unique cases.",
-                "Total events executed: 931 times.",
-                "Average processing time: 1h 59m 0.6s",
-                "Loop connections: from 8 to 7 (backward), from 8 to 6 (backward), from 8 to 3 (backward), from 8 to 4 (backward), from 8 to 2 (backward), from 8 to 5 (backward)"
-            ]
-        },
-        {
-            "label": "ConfirmDelivery",
-            "Activity": "ConfirmDelivery",
-            "total_count": 899,
-            "case_count": 885,
-            "rework_case_count": 12.0,
-            "dropout_case_count": 14.0,
-            "isBottleneck": false,
-            "bottleneck_occurrence_event_count": 0,
-            "hasLoop": true,
-            "isDropout": false,
-            "activity_id": "9",
-            "loopConnections": [
-                {
-                    "from": "9",
-                    "to": "4",
-                    "loop_with": "ApproveOrder",
-                    "loop_type": "backward",
-                    "frequency": 2
-                },
-                {
-                    "from": "9",
-                    "to": "3",
-                    "loop_with": "CheckStock",
-                    "loop_type": "backward",
-                    "frequency": 1
-                },
-                {
-                    "from": "9",
-                    "to": "6",
-                    "loop_with": "InvoiceSend",
-                    "loop_type": "backward",
-                    "frequency": 1
-                },
-                {
-                    "from": "9",
-                    "to": "5",
-                    "loop_with": "PrepareInvoice",
-                    "loop_type": "backward",
-                    "frequency": 1
-                },
-                {
-                    "from": "9",
-                    "to": "8",
-                    "loop_with": "ShipGoods",
-                    "loop_type": "backward",
-                    "frequency": 1
-                },
-                {
-                    "from": "9",
-                    "to": "2",
-                    "loop_with": "ValidateData",
-                    "loop_type": "backward",
-                    "frequency": 1
-                }
-            ],
-            "loop_count": 6,
-            "cost_per_h": 0.0,
-            "avg_duration_seconds": 985.757508342,
-            "id": "9",
-            "value": "16.43",
-            "status": "in-progress",
-            "owner": "N/A",
-            "descriptions": [
-                "Activity executed in 885 unique cases.",
-                "Total events executed: 899 times.",
-                "Average processing time: 16m 25.76s",
-                "Loop connections: from 9 to 4 (backward), from 9 to 3 (backward), from 9 to 6 (backward), from 9 to 5 (backward), from 9 to 8 (backward), from 9 to 2 (backward)"
-            ]
-        },
-        {
-            "label": "ArchiveCase",
-            "Activity": "ArchiveCase",
-            "total_count": 878,
-            "case_count": 871,
-            "rework_case_count": 6.0,
-            "dropout_case_count": null,
-            "isBottleneck": false,
-            "bottleneck_occurrence_event_count": 0,
-            "hasLoop": true,
-            "isDropout": false,
-            "activity_id": "10",
-            "loopConnections": [
-                {
-                    "from": "10",
-                    "to": "4",
-                    "loop_with": "ApproveOrder",
-                    "loop_type": "backward",
-                    "frequency": 2
-                },
-                {
-                    "from": "10",
-                    "to": "8",
-                    "loop_with": "ShipGoods",
-                    "loop_type": "backward",
-                    "frequency": 2
-                },
-                {
-                    "from": "10",
-                    "to": "9",
-                    "loop_with": "ConfirmDelivery",
-                    "loop_type": "backward",
-                    "frequency": 1
-                },
-                {
-                    "from": "10",
-                    "to": "7",
-                    "loop_with": "PackGoods",
-                    "loop_type": "backward",
-                    "frequency": 1
-                },
-                {
-                    "from": "10",
-                    "to": "5",
-                    "loop_with": "PrepareInvoice",
-                    "loop_type": "backward",
-                    "frequency": 1
-                }
-            ],
-            "loop_count": 5,
-            "cost_per_h": 0.0,
-            "avg_duration_seconds": 179.661731207,
-            "id": "10",
-            "value": "2.99",
-            "status": "final",
-            "owner": "N/A",
-            "descriptions": [
-                "Activity executed in 871 unique cases.",
-                "Total events executed: 878 times.",
-                "Average processing time: 2m 59.66s",
-                "Loop connections: from 10 to 4 (backward), from 10 to 8 (backward), from 10 to 9 (backward), from 10 to 7 (backward), from 10 to 5 (backward)"
-            ]
+          "sequence": [
+            "ReceiveOrder",
+            "ValidateData",
+            "CheckStock",
+            "ApproveOrder",
+            "PrepareInvoice",
+            "InvoiceSend"
+          ],
+          "count": 16,
+          "percentage": 1.6
         }
-    ]
+      ]
+    },
+    "Rework_Analysis_Simplified": {
+      "Activities_In_Loops_Count": 7,
+      "Time_Lost_Simplified_Basis": "Loop details embedded in 'loopConnections'."
+    },
+    "Bottleneck_Analysis_Simplified": {
+      "Bottlenecks_Based_on_Avg_Duration_Count": 3,
+      "Time_Lost_Simplified_Basis": "Bottlenecks flagged if avg duration > overall log avg duration."
+    },
+    "Cost_Analysis": {
+      "Total_Process_Cost": 15369.17,
+      "Currency": "USD"
+    },
+    "happy_path": false
+  },
+  "process_flow_nodes": [
+    {
+      "label": "ReceiveOrder",
+      "Activity": "ReceiveOrder",
+      "total_count": 1000,
+      "case_count": 1000,
+      "rework_case_count": null,
+      "dropout_case_count": null,
+      "isBottleneck": false,
+      "bottleneck_occurrence_event_count": 0,
+      "hasLoop": false,
+      "isDropout": false,
+      "activity_id": "1",
+      "loopConnections": null,
+      "loop_count": 0,
+      "cost_per_h": 10.0,
+      "avg_duration_seconds": 302.511,
+      "id": "1",
+      "value": "5.04",
+      "status": "in-progress",
+      "owner": "N/A",
+      "descriptions": [
+        "Activity executed in 1000 unique cases.",
+        "Total events executed: 1000 times.",
+        "Average processing time: 5m 2.51s",
+        "No loops detected."
+      ]
+    },
+    {
+      "label": "ValidateData",
+      "Activity": "ValidateData",
+      "total_count": 1081,
+      "case_count": 1000,
+      "rework_case_count": 69.0,
+      "dropout_case_count": null,
+      "isBottleneck": false,
+      "bottleneck_occurrence_event_count": 0,
+      "hasLoop": true,
+      "isDropout": false,
+      "activity_id": "2",
+      "loopConnections": null,
+      "loop_count": 0,
+      "cost_per_h": 20.0,
+      "avg_duration_seconds": 759.099907493,
+      "id": "2",
+      "value": "12.65",
+      "status": "in-progress",
+      "owner": "N/A",
+      "descriptions": [
+        "Activity executed in 1000 unique cases.",
+        "Total events executed: 1081 times.",
+        "Average processing time: 12m 39.1s",
+        "No loops detected."
+      ]
+    },
+    {
+      "label": "CheckStock",
+      "Activity": "CheckStock",
+      "total_count": 1176,
+      "case_count": 1000,
+      "rework_case_count": 112.0,
+      "dropout_case_count": 25.0,
+      "isBottleneck": false,
+      "bottleneck_occurrence_event_count": 0,
+      "hasLoop": true,
+      "isDropout": true,
+      "activity_id": "3",
+      "loopConnections": null,
+      "loop_count": 0,
+      "cost_per_h": 15.0,
+      "avg_duration_seconds": 535.863095238,
+      "id": "3",
+      "value": "8.93",
+      "status": "in-progress",
+      "owner": "N/A",
+      "descriptions": [
+        "Activity executed in 1000 unique cases.",
+        "Total events executed: 1176 times.",
+        "Average processing time: 8m 55.86s",
+        "No loops detected."
+      ]
+    },
+    {
+      "label": "ApproveOrder",
+      "Activity": "ApproveOrder",
+      "total_count": 1190,
+      "case_count": 975,
+      "rework_case_count": 127.0,
+      "dropout_case_count": 12.0,
+      "isBottleneck": true,
+      "bottleneck_occurrence_event_count": 0,
+      "hasLoop": true,
+      "isDropout": false,
+      "activity_id": "4",
+      "loopConnections": [
+        {
+          "from": "4",
+          "to": "3",
+          "loop_with": "CheckStock",
+          "loop_type": "backward",
+          "frequency": 45
+        },
+        {
+          "from": "4",
+          "to": "2",
+          "loop_with": "ValidateData",
+          "loop_type": "backward",
+          "frequency": 38
+        }
+      ],
+      "loop_count": 2,
+      "cost_per_h": 10.0,
+      "avg_duration_seconds": 2559.571428571,
+      "id": "4",
+      "value": "42.66",
+      "status": "in-progress",
+      "owner": "N/A",
+      "descriptions": [
+        "Activity executed in 975 unique cases.",
+        "Total events executed: 1190 times.",
+        "Average processing time: 42m 39.57s",
+        "Loop connections: from 4 to 3 (backward), from 4 to 2 (backward)"
+      ]
+    },
+    {
+      "label": "PrepareInvoice",
+      "Activity": "PrepareInvoice",
+      "total_count": 1113,
+      "case_count": 963,
+      "rework_case_count": 105.0,
+      "dropout_case_count": 19.0,
+      "isBottleneck": false,
+      "bottleneck_occurrence_event_count": 0,
+      "hasLoop": true,
+      "isDropout": true,
+      "activity_id": "5",
+      "loopConnections": [
+        {
+          "from": "5",
+          "to": "2",
+          "loop_with": "ValidateData",
+          "loop_type": "backward",
+          "frequency": 27
+        },
+        {
+          "from": "5",
+          "to": "3",
+          "loop_with": "CheckStock",
+          "loop_type": "backward",
+          "frequency": 25
+        },
+        {
+          "from": "5",
+          "to": "4",
+          "loop_with": "ApproveOrder",
+          "loop_type": "backward",
+          "frequency": 19
+        }
+      ],
+      "loop_count": 3,
+      "cost_per_h": 20.0,
+      "avg_duration_seconds": 895.856244384,
+      "id": "5",
+      "value": "14.93",
+      "status": "in-progress",
+      "owner": "N/A",
+      "descriptions": [
+        "Activity executed in 963 unique cases.",
+        "Total events executed: 1113 times.",
+        "Average processing time: 14m 55.86s",
+        "Loop connections: from 5 to 2 (backward), from 5 to 3 (backward), from 5 to 4 (backward)"
+      ]
+    },
+    {
+      "label": "InvoiceSend",
+      "Activity": "InvoiceSend",
+      "total_count": 1036,
+      "case_count": 944,
+      "rework_case_count": 73.0,
+      "dropout_case_count": 21.0,
+      "isBottleneck": false,
+      "bottleneck_occurrence_event_count": 0,
+      "hasLoop": true,
+      "isDropout": true,
+      "activity_id": "6",
+      "loopConnections": [
+        {
+          "from": "6",
+          "to": "3",
+          "loop_with": "CheckStock",
+          "loop_type": "backward",
+          "frequency": 14
+        },
+        {
+          "from": "6",
+          "to": "5",
+          "loop_with": "PrepareInvoice",
+          "loop_type": "backward",
+          "frequency": 12
+        },
+        {
+          "from": "6",
+          "to": "2",
+          "loop_with": "ValidateData",
+          "loop_type": "backward",
+          "frequency": 9
+        },
+        {
+          "from": "6",
+          "to": "4",
+          "loop_with": "ApproveOrder",
+          "loop_type": "backward",
+          "frequency": 7
+        }
+      ],
+      "loop_count": 4,
+      "cost_per_h": 10.0,
+      "avg_duration_seconds": 338.03088803,
+      "id": "6",
+      "value": "5.63",
+      "status": "in-progress",
+      "owner": "N/A",
+      "descriptions": [
+        "Activity executed in 944 unique cases.",
+        "Total events executed: 1036 times.",
+        "Average processing time: 5m 38.03s",
+        "Loop connections: from 6 to 3 (backward), from 6 to 5 (backward), from 6 to 2 (backward), from 6 to 4 (backward)"
+      ]
+    },
+    {
+      "label": "PackGoods",
+      "Activity": "PackGoods",
+      "total_count": 978,
+      "case_count": 923,
+      "rework_case_count": 47.0,
+      "dropout_case_count": 21.0,
+      "isBottleneck": true,
+      "bottleneck_occurrence_event_count": 0,
+      "hasLoop": true,
+      "isDropout": true,
+      "activity_id": "7",
+      "loopConnections": [
+        {
+          "from": "7",
+          "to": "6",
+          "loop_with": "InvoiceSend",
+          "loop_type": "backward",
+          "frequency": 8
+        },
+        {
+          "from": "7",
+          "to": "3",
+          "loop_with": "CheckStock",
+          "loop_type": "backward",
+          "frequency": 7
+        },
+        {
+          "from": "7",
+          "to": "4",
+          "loop_with": "ApproveOrder",
+          "loop_type": "backward",
+          "frequency": 7
+        },
+        {
+          "from": "7",
+          "to": "2",
+          "loop_with": "ValidateData",
+          "loop_type": "backward",
+          "frequency": 4
+        },
+        {
+          "from": "7",
+          "to": "5",
+          "loop_with": "PrepareInvoice",
+          "loop_type": "backward",
+          "frequency": 3
+        }
+      ],
+      "loop_count": 5,
+      "cost_per_h": 20.0,
+      "avg_duration_seconds": 1672.213701431,
+      "id": "7",
+      "value": "27.87",
+      "status": "in-progress",
+      "owner": "N/A",
+      "descriptions": [
+        "Activity executed in 923 unique cases.",
+        "Total events executed: 978 times.",
+        "Average processing time: 27m 52.21s",
+        "Loop connections: from 7 to 6 (backward), from 7 to 3 (backward), from 7 to 4 (backward), from 7 to 2 (backward), from 7 to 5 (backward)"
+      ]
+    },
+    {
+      "label": "ShipGoods",
+      "Activity": "ShipGoods",
+      "total_count": 931,
+      "case_count": 902,
+      "rework_case_count": 24.0,
+      "dropout_case_count": 17.0,
+      "isBottleneck": true,
+      "bottleneck_occurrence_event_count": 79,
+      "hasLoop": true,
+      "isDropout": true,
+      "activity_id": "8",
+      "loopConnections": [
+        {
+          "from": "8",
+          "to": "7",
+          "loop_with": "PackGoods",
+          "loop_type": "backward",
+          "frequency": 4
+        },
+        {
+          "from": "8",
+          "to": "6",
+          "loop_with": "InvoiceSend",
+          "loop_type": "backward",
+          "frequency": 4
+        },
+        {
+          "from": "8",
+          "to": "3",
+          "loop_with": "CheckStock",
+          "loop_type": "backward",
+          "frequency": 3
+        },
+        {
+          "from": "8",
+          "to": "4",
+          "loop_with": "ApproveOrder",
+          "loop_type": "backward",
+          "frequency": 2
+        },
+        {
+          "from": "8",
+          "to": "2",
+          "loop_with": "ValidateData",
+          "loop_type": "backward",
+          "frequency": 2
+        },
+        {
+          "from": "8",
+          "to": "5",
+          "loop_with": "PrepareInvoice",
+          "loop_type": "backward",
+          "frequency": 1
+        }
+      ],
+      "loop_count": 6,
+      "cost_per_h": 10.0,
+      "avg_duration_seconds": 7140.603651987,
+      "id": "8",
+      "value": "119.01",
+      "status": "in-progress",
+      "owner": "N/A",
+      "descriptions": [
+        "Activity executed in 902 unique cases.",
+        "Total events executed: 931 times.",
+        "Average processing time: 1h 59m 0.6s",
+        "Loop connections: from 8 to 7 (backward), from 8 to 6 (backward), from 8 to 3 (backward), from 8 to 4 (backward), from 8 to 2 (backward), from 8 to 5 (backward)"
+      ]
+    },
+    {
+      "label": "ConfirmDelivery",
+      "Activity": "ConfirmDelivery",
+      "total_count": 899,
+      "case_count": 885,
+      "rework_case_count": 12.0,
+      "dropout_case_count": 14.0,
+      "isBottleneck": false,
+      "bottleneck_occurrence_event_count": 0,
+      "hasLoop": true,
+      "isDropout": false,
+      "activity_id": "9",
+      "loopConnections": [
+        {
+          "from": "9",
+          "to": "4",
+          "loop_with": "ApproveOrder",
+          "loop_type": "backward",
+          "frequency": 2
+        },
+        {
+          "from": "9",
+          "to": "3",
+          "loop_with": "CheckStock",
+          "loop_type": "backward",
+          "frequency": 1
+        },
+        {
+          "from": "9",
+          "to": "6",
+          "loop_with": "InvoiceSend",
+          "loop_type": "backward",
+          "frequency": 1
+        },
+        {
+          "from": "9",
+          "to": "5",
+          "loop_with": "PrepareInvoice",
+          "loop_type": "backward",
+          "frequency": 1
+        },
+        {
+          "from": "9",
+          "to": "8",
+          "loop_with": "ShipGoods",
+          "loop_type": "backward",
+          "frequency": 1
+        },
+        {
+          "from": "9",
+          "to": "2",
+          "loop_with": "ValidateData",
+          "loop_type": "backward",
+          "frequency": 1
+        }
+      ],
+      "loop_count": 6,
+      "cost_per_h": 0.0,
+      "avg_duration_seconds": 985.757508342,
+      "id": "9",
+      "value": "16.43",
+      "status": "in-progress",
+      "owner": "N/A",
+      "descriptions": [
+        "Activity executed in 885 unique cases.",
+        "Total events executed: 899 times.",
+        "Average processing time: 16m 25.76s",
+        "Loop connections: from 9 to 4 (backward), from 9 to 3 (backward), from 9 to 6 (backward), from 9 to 5 (backward), from 9 to 8 (backward), from 9 to 2 (backward)"
+      ]
+    },
+    {
+      "label": "ArchiveCase",
+      "Activity": "ArchiveCase",
+      "total_count": 878,
+      "case_count": 871,
+      "rework_case_count": 6.0,
+      "dropout_case_count": null,
+      "isBottleneck": false,
+      "bottleneck_occurrence_event_count": 0,
+      "hasLoop": true,
+      "isDropout": false,
+      "activity_id": "10",
+      "loopConnections": [
+        {
+          "from": "10",
+          "to": "4",
+          "loop_with": "ApproveOrder",
+          "loop_type": "backward",
+          "frequency": 2
+        },
+        {
+          "from": "10",
+          "to": "8",
+          "loop_with": "ShipGoods",
+          "loop_type": "backward",
+          "frequency": 2
+        },
+        {
+          "from": "10",
+          "to": "9",
+          "loop_with": "ConfirmDelivery",
+          "loop_type": "backward",
+          "frequency": 1
+        },
+        {
+          "from": "10",
+          "to": "7",
+          "loop_with": "PackGoods",
+          "loop_type": "backward",
+          "frequency": 1
+        },
+        {
+          "from": "10",
+          "to": "5",
+          "loop_with": "PrepareInvoice",
+          "loop_type": "backward",
+          "frequency": 1
+        }
+      ],
+      "loop_count": 5,
+      "cost_per_h": 0.0,
+      "avg_duration_seconds": 179.661731207,
+      "id": "10",
+      "value": "2.99",
+      "status": "final",
+      "owner": "N/A",
+      "descriptions": [
+        "Activity executed in 871 unique cases.",
+        "Total events executed: 878 times.",
+        "Average processing time: 2m 59.66s",
+        "Loop connections: from 10 to 4 (backward), from 10 to 8 (backward), from 10 to 9 (backward), from 10 to 7 (backward), from 10 to 5 (backward)"
+      ]
+    }
+  ],
+  "cost_per_process": [
+    {
+      "id": 78,
+      "project": 88,
+      "activity_name": "ReceiveOrder",
+      "cost_per_h": "10.00"
+    },
+    {
+      "id": 79,
+      "project": 88,
+      "activity_name": "ValidateData",
+      "cost_per_h": "20.00"
+    },
+    {
+      "id": 80,
+      "project": 88,
+      "activity_name": "CheckStock",
+      "cost_per_h": "15.00"
+    },
+    {
+      "id": 81,
+      "project": 88,
+      "activity_name": "ApproveOrder",
+      "cost_per_h": "10.00"
+    },
+    {
+      "id": 82,
+      "project": 88,
+      "activity_name": "PrepareInvoice",
+      "cost_per_h": "20.00"
+    },
+    {
+      "id": 83,
+      "project": 88,
+      "activity_name": "InvoiceSend",
+      "cost_per_h": "10.00"
+    },
+    {
+      "id": 84,
+      "project": 88,
+      "activity_name": "PackGoods",
+      "cost_per_h": "20.00"
+    },
+    {
+      "id": 85,
+      "project": 88,
+      "activity_name": "ShipGoods",
+      "cost_per_h": "10.00"
+    }
+  ]
 }
+
+
